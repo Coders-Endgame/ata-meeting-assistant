@@ -1,0 +1,14 @@
+services:
+  zoom-bot:
+    build: .
+    env_file:
+      - ../.env
+    environment:
+      - PYTHONUNBUFFERED=1
+    # You can override the command here
+    command: ["--url", "YOUR_ZOOM_URL", "--name", "DockerBot"]
+    volumes:
+      - ./transcripts:/app/transcripts
+      - ./bot.py:/app/bot.py
+      - ./config.json:/app/config.json
+

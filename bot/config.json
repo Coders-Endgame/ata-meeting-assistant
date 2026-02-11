@@ -1,0 +1,7 @@
+{
+    "allowed_languages": [
+        "en",
+        "tr"
+    ],
+    "model_size": "small"
+}

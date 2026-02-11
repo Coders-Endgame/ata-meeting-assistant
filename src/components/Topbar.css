@@ -1,0 +1,152 @@
+/* Topbar Component Styles */
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-xl);
+  background-color: var(--widget-bg);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.topbar-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--heading-color);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.topbar-title:hover {
+  color: var(--primary-color);
+}
+
+/* User Profile Widget */
+.user-profile-widget {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  padding: var(--spacing-xs) var(--spacing-md) var(--spacing-xs) var(--spacing-xs);
+  border-radius: var(--radius-full);
+  background-color: var(--widget-bg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  transition: all 0.2s;
+}
+
+.user-profile-widget:hover {
+  background-color: var(--input-bg);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.user-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+/* Account Dialog Styling */
+
+/* Dialog Container & Paper */
+.account-dialog .MuiPaper-root {
+  background-color: var(--widget-bg) !important;
+  color: var(--text-color) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* Dialog Title */
+.account-dialog-title {
+  color: var(--heading-color) !important;
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 600 !important;
+}
+
+/* Inputs fields */
+.account-input .MuiOutlinedInput-root {
+  color: var(--input-text) !important;
+  background-color: var(--input-bg) !important;
+}
+
+.account-input .MuiInputLabel-root {
+  color: var(--text-color-secondary) !important;
+}
+
+.account-input .MuiInputLabel-root.Mui-focused {
+  color: var(--primary-color) !important;
+}
+
+.account-input .MuiOutlinedInput-notchedOutline {
+  border-color: var(--input-border) !important;
+}
+
+.account-input .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: var(--text-color-secondary) !important;
+}
+
+.account-input .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--primary-color) !important;
+}
+
+/* Divider */
+.account-divider {
+  border-color: var(--border-color) !important;
+}
+
+/* Buttons */
+.account-close-btn {
+  color: var(--text-color) !important;
+}
+
+.account-close-btn:hover {
+  background-color: var(--input-bg) !important;
+}
+
+.account-update-btn {
+  background-color: var(--primary-color) !important;
+  color: white !important;
+}
+
+.account-update-btn:hover {
+  background-color: var(--primary-hover) !important;
+}
+
+/* Text Colors */
+.account-dialog p,
+.account-dialog span {
+  color: var(--text-color);
+}
+
+/* User Menu Styling */
+.user-menu-paper {
+  background-color: var(--widget-bg) !important;
+  color: var(--text-color) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+.user-menu-item {
+  color: var(--text-color) !important;
+  font-size: 0.9rem !important;
+  padding: 8px 16px !important;
+}
+
+.user-menu-item:hover {
+  background-color: var(--input-bg) !important;
+}

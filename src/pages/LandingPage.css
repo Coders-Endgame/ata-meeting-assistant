@@ -1,0 +1,32 @@
+/* Landing Page Styles */
+
+.landing-page-container {
+  display: flex;
+  flex: 1;
+  padding: var(--spacing-xl) 0;
+  text-align: center;
+  min-height: 100%;
+}
+
+.landing-description {
+  font-size: 1.2rem;
+  margin: var(--spacing-lg) 0;
+  color: var(--text-color-secondary);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landing-action-area {
+  margin-top: var(--spacing-xl);
+}
+
+.landing-start-button {
+  padding: 0.75rem 2rem;
+  font-size: 1.1rem;
+  box-shadow: var(--shadow-md);
+}
+
+.landing-start-button:hover {
+  box-shadow: 0 4px 12px rgba(100, 108, 255, 0.3);
+}

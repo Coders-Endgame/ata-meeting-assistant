@@ -1,0 +1,16 @@
+{
+    "name": "ata-meeting-assistant-server",
+    "version": "1.0.0",
+    "description": "Backend API server for ATA Meeting Assistant bot management",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "node server.js"
+    },
+    "dependencies": {
+        "@supabase/supabase-js": "^2.93.3",
+        "cors": "^2.8.5",
+        "dotenv": "^17.2.3",
+        "express": "^4.21.0"
+    }
+}

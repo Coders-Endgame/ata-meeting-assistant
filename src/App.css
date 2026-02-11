@@ -1,0 +1,110 @@
+/* App-specific styles - common styles moved to index.css */
+
+.app-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-content {
+  display: flex;
+  flex: 1;
+}
+
+.main-content-logged-in {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-widget {
+  background-color: var(--widget-bg);
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  width: 100%;
+  max-width: 400px;
+}
+
+/* Split screen layout */
+.split-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.split-right {
+  flex: 1;
+  padding: var(--spacing-xl);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-container {
+  padding: var(--spacing-xl);
+}
+
+/* File Upload */
+.file-upload-container {
+  width: 100%;
+  margin-bottom: var(--spacing-md);
+}
+
+.file-input-hidden {
+  display: none;
+}
+
+.file-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  border: 2px dashed var(--input-border);
+  border-radius: var(--radius-md);
+  background-color: var(--input-bg);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.file-upload-label:hover {
+  border-color: var(--primary-color);
+  background-color: var(--widget-bg);
+  transform: translateY(-2px);
+}
+
+.file-upload-icon {
+  color: var(--text-color-secondary);
+  transition: color 0.2s;
+  margin-bottom: var(--spacing-sm);
+}
+
+.file-upload-label:hover .file-upload-icon {
+  color: var(--primary-color);
+}
+
+.file-upload-text {
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: var(--spacing-xs);
+}
+
+.file-upload-subtext {
+  font-size: 0.85rem;
+  color: var(--text-color-secondary);
+}
+
+.audio-player-container {
+  margin: var(--spacing-md) 0;
+  width: 100%;
+}
+
+.audio-player {
+  width: 100%;
+}

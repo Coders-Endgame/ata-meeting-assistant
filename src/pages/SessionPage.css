@@ -2,14 +2,173 @@
 
 .session-page {
   display: flex;
+  flex-direction: column;
   width: 100%;
+  height: 100%;
   background-color: var(--bg-color);
 }
 
-.session-container {
+/* ========== Top Toolbar ========== */
+.session-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--widget-bg);
+  border-bottom: 1px solid var(--border-color);
+  gap: var(--spacing-md);
+  flex-shrink: 0;
+  min-height: 48px;
+  z-index: 20;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+}
+
+.back-button {
+  color: var(--text-color) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.back-button:hover {
+  background-color: var(--input-bg) !important;
+  border-color: var(--text-color-secondary) !important;
+}
+
+/* Participants area in toolbar */
+.toolbar-participants {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.participants-chip {
+  color: var(--text-color) !important;
+  border-color: var(--border-color) !important;
+  font-size: 0.8rem !important;
+  cursor: pointer;
+}
+
+.participants-chip:hover {
+  background-color: var(--input-bg) !important;
+  border-color: var(--text-color-secondary) !important;
+}
+
+.participants-chip .MuiChip-icon {
+  color: var(--text-color-secondary) !important;
+}
+
+.share-button {
+  color: var(--primary-color) !important;
+  border: 1px solid var(--primary-color) !important;
+  border-radius: var(--radius-sm) !important;
+  padding: 4px !important;
+}
+
+.share-button:hover {
+  background-color: rgba(var(--primary-rgb, 99, 102, 241), 0.08) !important;
+}
+
+/* Bot status in toolbar */
+.toolbar-bot-status {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 4px 10px;
+  background-color: var(--input-bg);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+/* Audio player in toolbar */
+.toolbar-audio {
+  display: flex;
+  align-items: center;
+}
+
+.audio-player {
+  height: 32px;
+  max-width: 280px;
+  border-radius: var(--radius-sm);
+}
+
+/* ========== Participants Backdrop ========== */
+.participants-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+}
+
+/* ========== Participants Dropdown ========== */
+.participants-dropdown {
+  position: absolute;
+  top: 48px;
+  left: 80px;
+  width: 300px;
+  max-height: 360px;
+  background-color: var(--widget-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.participants-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  gap: var(--spacing-sm);
+}
+
+.participants-dropdown-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-xs) var(--spacing-sm) !important;
+  max-height: 280px;
+}
+
+.participants-dropdown-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.participants-dropdown-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.participants-dropdown-list::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.participant-item-compact {
+  padding: 6px var(--spacing-sm) !important;
+  border-radius: var(--radius-sm);
+}
+
+.participant-item-compact:hover {
+  background-color: var(--input-bg);
+}
+
+/* ========== Main Content Area ========== */
+.session-content {
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
   position: relative;
 }
 
@@ -18,57 +177,17 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
   background-color: var(--widget-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   margin: var(--spacing-md);
 }
 
-/* Sidebar Panel */
-.panel.sidebar {
-  width: 280px;
-  border-right: 1px solid var(--border-color);
-  background-color: var(--sidebar-bg);
-  transition: width 0.3s ease, margin-left 0.3s ease;
-  position: relative;
-  z-index: 10;
-}
-
-.panel.sidebar.closed {
-  width: auto;
-}
-
-.panel.sidebar.open {
-  width: 280px;
-}
-
-.sidebar-header-row {
-  display: flex;
-  align-items: center;
-  padding: var(--spacing-md);
-  border-bottom: 1px solid var(--border-color);
-  gap: var(--spacing-sm);
-  min-height: 56px;
-}
-
-.sidebar-header-row .MuiTypography-h6 {
-  flex: 1;
-  font-weight: 600;
-  color: var(--heading-color);
-}
-
-.sidebar-header-row .MuiIconButton-root {
-  color: var(--text-color);
-}
-
-.sidebar-header-row .MuiIconButton-root:hover {
-  background-color: var(--input-bg);
-}
-
-
 .scrollable-content {
   flex: 1;
   overflow-y: auto;
+  min-height: 0;
   padding-right: var(--spacing-sm);
 }
 
@@ -89,62 +208,7 @@
   background: var(--text-color-secondary);
 }
 
-
-/* Sidebar Components */
-.sidebar-actions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md);
-}
-
-.search-bar-container {
-  padding: 0 var(--spacing-md);
-  margin-bottom: var(--spacing-sm);
-}
-
-.scroll-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0 var(--spacing-sm);
-}
-
-.scroll-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.scroll-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.scroll-list::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 3px;
-}
-
-.scroll-list::-webkit-scrollbar-thumb:hover {
-  background: var(--text-color-secondary);
-}
-
-.participant-item {
-  padding: var(--spacing-sm) var(--spacing-md) !important;
-  border-radius: var(--radius-sm);
-  margin-bottom: var(--spacing-xs);
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.participant-item:hover {
-  background-color: var(--input-bg);
-}
-
-.participant-item .MuiListItemText-primary {
-  color: var(--text-color);
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-/* Resizer */
+/* ========== Resizer ========== */
 .resizer {
   width: 8px;
   cursor: col-resize;
@@ -172,16 +236,13 @@
   transition: background-color 0.2s ease;
 }
 
-/* Search Bar */
-.search-bar {
-  margin-bottom: 0 !important;
-}
-
+/* ========== Search Bar ========== */
 .search-bar .MuiInputBase-root {
   color: var(--input-text);
   background-color: var(--input-bg);
   border-radius: var(--radius-sm);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  height: 32px;
 }
 
 .search-bar .MuiOutlinedInput-notchedOutline {
@@ -196,7 +257,7 @@
   border-color: var(--primary-color);
 }
 
-/* Summary Text Styling */
+/* ========== Summary Text ========== */
 .summary-text {
   white-space: pre-wrap;
   line-height: 1.8;
@@ -209,8 +270,7 @@
   font-style: italic;
 }
 
-
-/* Dialog Styles */
+/* ========== Dialog Styles ========== */
 .share-dialog .MuiPaper-root {
   background-color: var(--widget-bg) !important;
   color: var(--text-color) !important;
@@ -276,10 +336,15 @@
   width: 100% !important;
 }
 
-/* Responsive Design */
+/* ========== Responsive ========== */
 @media (max-width: 768px) {
-  .panel.sidebar.open {
-    width: 240px;
+  .session-toolbar {
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
+
+  .audio-player {
+    max-width: 200px;
   }
 
   .panel.transcript,
@@ -291,9 +356,14 @@
     min-width: 300px;
     margin: var(--spacing-md);
   }
+
+  .participants-dropdown {
+    left: var(--spacing-md);
+    width: calc(100% - var(--spacing-md) * 2);
+  }
 }
 
-/* Loading State */
+/* ========== States ========== */
 .loading-container {
   display: flex;
   justify-content: center;
@@ -302,7 +372,6 @@
   min-height: 200px;
 }
 
-/* Empty State */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -314,21 +383,10 @@
   min-height: 200px;
 }
 
-/* Bot Status Styles */
-.bot-status-container {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm);
-  background-color: var(--input-bg);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-color);
-}
-
+/* ========== Bot Status ========== */
 .bot-icon {
   color: var(--primary-color);
-  font-size: 1.4rem !important;
-  margin-top: 2px;
+  font-size: 1.2rem !important;
 }
 
 .bot-status-info {
@@ -391,12 +449,10 @@
 }
 
 @keyframes botPulse {
-
   0%,
   100% {
     opacity: 1;
   }
-
   50% {
     opacity: 0.4;
   }
@@ -448,12 +504,10 @@
 }
 
 @keyframes botBounce {
-
   0%,
   100% {
     transform: translateY(0);
   }
-
   50% {
     transform: translateY(-10px);
   }

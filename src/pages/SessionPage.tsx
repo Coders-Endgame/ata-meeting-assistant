@@ -2,11 +2,9 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import {
-    TextField,
     List,
     ListItem,
     ListItemText,
-    ListItemAvatar,
     Avatar,
     Typography,
     Button,
@@ -20,13 +18,16 @@ import {
     IconButton,
     Box,
     Paper,
-    Divider
+    Divider,
+    TextField,
+    Tooltip,
+    AvatarGroup,
+    Chip
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import GroupIcon from '@mui/icons-material/Group';
 import './SessionPage.css';
 
 interface Participant {
@@ -73,8 +74,8 @@ export default function SessionPage() {
     });
 
     // Layout states
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [leftPanelWidth, setLeftPanelWidth] = useState(50); // flex-grow units
+    const [leftPanelWidth, setLeftPanelWidth] = useState(50);
+    const [showParticipants, setShowParticipants] = useState(false);
     const isResizing = useRef(false);
     const transcriptRef = useRef<HTMLDivElement>(null);
     const summaryRef = useRef<HTMLDivElement>(null);
@@ -364,138 +365,148 @@ export default function SessionPage() {
 
     return (
         <div className="session-page">
-            <div className="session-container">
-                {/* 1. Sidebar Panel */}
-                <div className={`panel sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
-                    <div className="sidebar-header-row">
-                        <IconButton onClick={() => setIsSidebarOpen(!isSidebarOpen)} size="small">
-                            {isSidebarOpen ? <ChevronLeftIcon /> : <ChevronRightIcon />}
+            {/* Top Toolbar */}
+            <div className="session-toolbar">
+                <div className="toolbar-left">
+                    <Tooltip title="Back to Dashboard">
+                        <IconButton onClick={() => navigate('/dashboard')} className="back-button" size="small">
+                            <ArrowBackIcon />
                         </IconButton>
-                        {isSidebarOpen && (
-                            <Typography variant="h6" noWrap>Participants</Typography>
-                        )}
+                    </Tooltip>
+
+                    {/* Participants */}
+                    <div className="toolbar-participants">
+                        <Tooltip title="View participants">
+                            <Chip
+                                icon={<GroupIcon sx={{ fontSize: '1rem' }} />}
+                                label={`${participants.length} participant${participants.length !== 1 ? 's' : ''}`}
+                                variant="outlined"
+                                size="small"
+                                onClick={() => setShowParticipants(!showParticipants)}
+                                className="participants-chip"
+                            />
+                        </Tooltip>
+                        <AvatarGroup
+                            max={5}
+                            sx={{ cursor: 'pointer' }}
+                            onClick={() => setShowParticipants(!showParticipants)}
+                        >
+                            {participants.map((p) => (
+                                <Tooltip key={p.user_id} title={p.display_name}>
+                                    <Avatar
+                                        sx={{
+                                            width: 28,
+                                            height: 28,
+                                            fontSize: '0.75rem',
+                                            bgcolor: 'var(--primary-color)',
+                                            color: '#fff',
+                                            border: '2px solid var(--widget-bg) !important'
+                                        }}
+                                    >
+                                        {p.display_name[0].toUpperCase()}
+                                    </Avatar>
+                                </Tooltip>
+                            ))}
+                        </AvatarGroup>
+                        <Tooltip title="Share session">
+                            <IconButton size="small" onClick={() => setOpenShareDialog(true)} className="share-button">
+                                <PersonAddIcon sx={{ fontSize: '1.1rem' }} />
+                            </IconButton>
+                        </Tooltip>
                     </div>
+                </div>
 
-                    {isSidebarOpen && (
-                        <div>
-                            {/* Offline Audio Player */}
-                            {audioUrl && (
-                                <Box sx={{ px: 2, py: 2 }}>
-                                    <Typography variant="subtitle2" gutterBottom>
-                                        Session Audio
-                                    </Typography>
-                                    <audio controls src={audioUrl} style={{ width: '100%' }}>
-                                        Your browser does not support the audio element.
-                                    </audio>
-                                    <Divider sx={{ mt: 2 }} />
-                                </Box>
+                <div className="toolbar-right">
+                    {/* Bot Status for Zoom sessions */}
+                    {sourceType === 'Zoom' && (
+                        <div className="toolbar-bot-status">
+                            <SmartToyIcon className="bot-icon" />
+                            {botLoading ? (
+                                <div className="bot-status-loading">
+                                    <CircularProgress size={12} />
+                                    <span>Checking...</span>
+                                </div>
+                            ) : (
+                                <div className={`bot-status-badge ${botStatus.status === 'active' ? 'active' : botStatus.running ? 'preparing' : 'inactive'}`}>
+                                    <span className="bot-status-dot"></span>
+                                    {botStatus.status === 'starting' && 'Starting...'}
+                                    {botStatus.status === 'joining' && 'Joining...'}
+                                    {botStatus.status === 'active' && 'Bot Active'}
+                                    {(!botStatus.running || botStatus.status === 'stopped') && 'Bot Offline'}
+                                </div>
                             )}
+                        </div>
+                    )}
 
-                            {/* Bot Status Display */}
-                            {sourceType === 'Zoom' && (
-                                <Box sx={{ px: 2, py: 1 }}>
-                                    <div className="bot-status-container">
-                                        <SmartToyIcon className="bot-icon" />
-                                        <div className="bot-status-info">
-                                            <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                                                Zoom Bot Status
-                                            </Typography>
-                                            {botLoading ? (
-                                                <div className="bot-status-loading">
-                                                    <CircularProgress size={12} />
-                                                    <span>Checking...</span>
-                                                </div>
-                                            ) : (
-                                                <div className={`bot-status-badge ${botStatus.status === 'active' ? 'active' : botStatus.running ? 'preparing' : 'inactive'}`}>
-                                                    <span className="bot-status-dot"></span>
-                                                    {botStatus.status === 'starting' && 'Starting...'}
-                                                    {botStatus.status === 'joining' && 'Joining Meeting...'}
-                                                    {botStatus.status === 'active' && 'Active'}
-                                                    {(!botStatus.running || botStatus.status === 'stopped') && 'Not Running'}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    {botStatus.running && botStatus.startedAt && (
-                                        <Typography variant="caption" sx={{ color: 'var(--text-color-secondary)', display: 'block', mt: 0.5 }}>
-                                            Started: {new Date(botStatus.startedAt).toLocaleTimeString()}
-                                        </Typography>
-                                    )}
-                                </Box>
-                            )}
-                            <div className="sidebar-actions">
-                                <Button
-                                    startIcon={<ArrowBackIcon />}
-                                    onClick={() => navigate('/dashboard')}
-                                    fullWidth
-                                    variant="outlined"
-                                    size="small"
-                                >
-                                    Back to Dashboard
-                                </Button>
-                                <Button
-                                    size="small"
-                                    startIcon={<PersonAddIcon />}
-                                    onClick={() => setOpenShareDialog(true)}
-                                    fullWidth
-                                    variant="contained"
-                                    color="primary"
-                                >
-                                    Share Session
-                                </Button>
-                            </div>
-
-                            <div className="search-bar-container">
-                                <TextField
-                                    variant="outlined"
-                                    placeholder="Search participants..."
-                                    size="small"
-                                    fullWidth
-                                    className="search-bar"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </div>
-
-                            <List className="scroll-list">
-                                {filteredParticipants.map((p) => (
-                                    <ListItem key={p.user_id} className="participant-item">
-                                        <ListItemAvatar>
-                                            <Avatar
-                                                sx={{
-                                                    width: 36,
-                                                    height: 36,
-                                                    fontSize: '0.95rem',
-                                                    bgcolor: 'var(--primary-color)',
-                                                    color: '#fff'
-                                                }}
-                                            >
-                                                {p.display_name[0].toUpperCase()}
-                                            </Avatar>
-                                        </ListItemAvatar>
-                                        <ListItemText
-                                            primary={p.display_name}
-                                            primaryTypographyProps={{
-                                                noWrap: true,
-                                                variant: 'body2',
-                                                sx: { fontWeight: 500 }
-                                            }}
-                                        />
-                                    </ListItem>
-                                ))}
-                                {filteredParticipants.length === 0 && (
-                                    <Box className="empty-state">
-                                        <Typography variant="body2" sx={{ color: 'var(--text-color-secondary)' }}>
-                                            {searchTerm ? 'No participants found' : 'No participants yet'}
-                                        </Typography>
-                                    </Box>
-                                )}
-                            </List>
+                    {/* Audio Player for offline sessions */}
+                    {audioUrl && (
+                        <div className="toolbar-audio">
+                            <audio controls src={audioUrl} className="audio-player">
+                                Your browser does not support the audio element.
+                            </audio>
                         </div>
                     )}
                 </div>
+            </div>
 
-                {/* 2. Transcript Panel */}
+            {/* Participants dropdown panel */}
+            {showParticipants && (
+                <div className="participants-backdrop" onClick={() => setShowParticipants(false)} />
+            )}
+            {showParticipants && (
+                <div className="participants-dropdown">
+                    <div className="participants-dropdown-header">
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'var(--heading-color)' }}>
+                            Participants ({participants.length})
+                        </Typography>
+                        <TextField
+                            variant="outlined"
+                            placeholder="Search..."
+                            size="small"
+                            className="search-bar"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            sx={{ width: 160 }}
+                        />
+                    </div>
+                    <Divider sx={{ borderColor: 'var(--border-color)' }} />
+                    <List className="participants-dropdown-list" dense>
+                        {filteredParticipants.map((p) => (
+                            <ListItem key={p.user_id} className="participant-item-compact">
+                                <Avatar
+                                    sx={{
+                                        width: 26,
+                                        height: 26,
+                                        fontSize: '0.7rem',
+                                        bgcolor: 'var(--primary-color)',
+                                        color: '#fff',
+                                        mr: 1.5
+                                    }}
+                                >
+                                    {p.display_name[0].toUpperCase()}
+                                </Avatar>
+                                <ListItemText
+                                    primary={p.display_name}
+                                    primaryTypographyProps={{
+                                        noWrap: true,
+                                        variant: 'body2',
+                                        sx: { fontWeight: 500, color: 'var(--text-color)' }
+                                    }}
+                                />
+                            </ListItem>
+                        ))}
+                        {filteredParticipants.length === 0 && (
+                            <Typography variant="body2" sx={{ color: 'var(--text-color-secondary)', p: 2, textAlign: 'center' }}>
+                                {searchTerm ? 'No participants found' : 'No participants yet'}
+                            </Typography>
+                        )}
+                    </List>
+                </div>
+            )}
+
+            {/* Main Content Area */}
+            <div className="session-content">
+                {/* Transcript Panel */}
                 <Paper
                     className="panel transcript"
                     elevation={0}
@@ -562,7 +573,7 @@ export default function SessionPage() {
                     <div className="resizer-bar"></div>
                 </div>
 
-                {/* 3. Summary Panel */}
+                {/* Summary Panel */}
                 <Paper
                     className="panel summary"
                     elevation={0}
@@ -627,7 +638,7 @@ export default function SessionPage() {
                 </Alert>
             </Snackbar>
 
-            {/* Bot Loading Overlay - Shows when bot is starting or joining */}
+            {/* Bot Loading Overlay */}
             {sourceType === 'Zoom' && !botLoading && botStatus.running && (botStatus.status === 'starting' || botStatus.status === 'joining') && (
                 <div className="bot-loading-overlay">
                     <div className="bot-loading-content">

@@ -13,6 +13,111 @@ import {
 } from '@mui/material';
 import './MainPage.css';
 
+/* ── Inline SVG Illustrations for MainPage ── */
+
+function ZoomMeetingIllustration() {
+    return (
+        <svg className="section-illustration zoom-illustration" viewBox="0 0 240 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Monitor */}
+            <rect className="il-float-slow" x="30" y="10" width="180" height="110" rx="12" fill="var(--il-device)" stroke="var(--il-stroke)" strokeWidth="1.5" />
+            <rect x="42" y="22" width="156" height="86" rx="6" fill="var(--il-screen)" />
+            {/* Video tiles */}
+            <rect className="il-tile-1" x="50" y="30" width="68" height="34" rx="4" fill="var(--il-accent1)" opacity="0.8" />
+            <rect className="il-tile-2" x="122" y="30" width="68" height="34" rx="4" fill="var(--il-accent2)" opacity="0.8" />
+            <rect className="il-tile-3" x="50" y="68" width="68" height="34" rx="4" fill="var(--il-accent3)" opacity="0.8" />
+            <rect className="il-tile-4" x="122" y="68" width="68" height="34" rx="4" fill="var(--il-accent1)" opacity="0.5" />
+            {/* People silhouettes */}
+            <circle cx="84" cy="42" r="7" fill="var(--il-person)" />
+            <path d="M74 54 Q84 62 94 54" fill="var(--il-person)" opacity="0.6" />
+            <circle cx="156" cy="42" r="7" fill="var(--il-person)" />
+            <path d="M146 54 Q156 62 166 54" fill="var(--il-person)" opacity="0.6" />
+            <circle cx="84" cy="80" r="7" fill="var(--il-person)" />
+            <path d="M74 92 Q84 100 94 92" fill="var(--il-person)" opacity="0.6" />
+            <circle cx="156" cy="80" r="7" fill="var(--il-person)" />
+            <path d="M146 92 Q156 100 166 92" fill="var(--il-person)" opacity="0.6" />
+            {/* Stand */}
+            <rect x="100" y="120" width="40" height="6" rx="2" fill="var(--il-device)" stroke="var(--il-stroke)" strokeWidth="1" />
+            <rect x="85" y="126" width="70" height="6" rx="3" fill="var(--il-device)" stroke="var(--il-stroke)" strokeWidth="1" />
+            {/* Connection lines */}
+            <g className="il-pulse-ring">
+                <circle cx="205" cy="25" r="10" fill="var(--il-accent2)" opacity="0.15" />
+                <circle cx="205" cy="25" r="6" fill="var(--il-accent2)" opacity="0.3" />
+                <circle cx="205" cy="25" r="3" fill="var(--il-accent2)" />
+            </g>
+        </svg>
+    );
+}
+
+function AudioWaveIllustration() {
+    return (
+        <svg className="section-illustration audio-illustration" viewBox="0 0 240 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Microphone */}
+            <rect className="il-float-slow" x="95" y="15" width="50" height="70" rx="25" fill="var(--il-device)" stroke="var(--il-stroke)" strokeWidth="1.5" />
+            <rect x="105" y="25" width="30" height="40" rx="15" fill="var(--il-accent1)" opacity="0.3" />
+            {/* Mic stand */}
+            <line x1="120" y1="85" x2="120" y2="115" stroke="var(--il-stroke)" strokeWidth="2" />
+            <line x1="100" y1="115" x2="140" y2="115" stroke="var(--il-stroke)" strokeWidth="2" strokeLinecap="round" />
+            {/* Sound waves */}
+            <path className="il-wave-1" d="M70 50 Q65 35 70 20" fill="none" stroke="var(--il-accent2)" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
+            <path className="il-wave-2" d="M55 55 Q48 35 55 15" fill="none" stroke="var(--il-accent2)" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
+            <path className="il-wave-3" d="M170 50 Q175 35 170 20" fill="none" stroke="var(--il-accent2)" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
+            <path className="il-wave-4" d="M185 55 Q192 35 185 15" fill="none" stroke="var(--il-accent2)" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
+            {/* Waveform bars (static) */}
+            <g className="il-waveform">
+                <rect x="30" y="132" width="6" height="16" rx="3" fill="var(--il-accent1)" opacity="0.5" />
+                <rect x="42" y="126" width="6" height="28" rx="3" fill="var(--il-accent1)" opacity="0.6" />
+                <rect x="54" y="122" width="6" height="36" rx="3" fill="var(--il-accent1)" opacity="0.7" />
+                <rect x="66" y="128" width="6" height="24" rx="3" fill="var(--il-accent2)" opacity="0.5" />
+                <rect x="78" y="120" width="6" height="38" rx="3" fill="var(--il-accent2)" opacity="0.6" />
+                <rect x="150" y="126" width="6" height="28" rx="3" fill="var(--il-accent2)" opacity="0.5" />
+                <rect x="162" y="122" width="6" height="36" rx="3" fill="var(--il-accent1)" opacity="0.7" />
+                <rect x="174" y="128" width="6" height="24" rx="3" fill="var(--il-accent1)" opacity="0.6" />
+                <rect x="186" y="132" width="6" height="16" rx="3" fill="var(--il-accent3)" opacity="0.5" />
+                <rect x="198" y="130" width="6" height="20" rx="3" fill="var(--il-accent3)" opacity="0.6" />
+            </g>
+            {/* AI sparkle */}
+            <g className="il-sparkle">
+                <circle cx="120" cy="50" r="5" fill="var(--il-accent3)" opacity="0.8" />
+                <line x1="120" y1="42" x2="120" y2="58" stroke="var(--il-accent3)" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="112" y1="50" x2="128" y2="50" stroke="var(--il-accent3)" strokeWidth="1.5" strokeLinecap="round" />
+            </g>
+        </svg>
+    );
+}
+
+function RecentSessionsIllustration() {
+    return (
+        <svg className="section-illustration recent-illustration" viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Clock face */}
+            <circle className="il-float-slow" cx="100" cy="52" r="40" fill="var(--il-device)" stroke="var(--il-stroke)" strokeWidth="1.5" />
+            <circle cx="100" cy="52" r="34" fill="var(--il-screen)" />
+            {/* Clock hands */}
+            <line className="il-clock-hour" x1="100" y1="52" x2="100" y2="30" stroke="var(--il-accent1)" strokeWidth="2.5" strokeLinecap="round" />
+            <line className="il-clock-minute" x1="100" y1="52" x2="118" y2="42" stroke="var(--il-accent2)" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="100" cy="52" r="3" fill="var(--il-accent1)" />
+            {/* Hour markers */}
+            <circle cx="100" cy="22" r="2" fill="var(--il-accent1)" opacity="0.6" />
+            <circle cx="130" cy="52" r="2" fill="var(--il-accent1)" opacity="0.6" />
+            <circle cx="100" cy="82" r="2" fill="var(--il-accent1)" opacity="0.6" />
+            <circle cx="70" cy="52" r="2" fill="var(--il-accent1)" opacity="0.6" />
+            {/* Document cards floating around */}
+            <g className="il-orbit-card-1">
+                <rect x="148" y="18" width="44" height="30" rx="5" fill="var(--il-card)" stroke="var(--il-stroke)" strokeWidth="1" />
+                <line x1="155" y1="28" x2="183" y2="28" stroke="var(--il-text-line)" strokeWidth="2" strokeLinecap="round" />
+                <line x1="155" y1="36" x2="175" y2="36" stroke="var(--il-text-line)" strokeWidth="2" strokeLinecap="round" />
+            </g>
+            <g className="il-orbit-card-2">
+                <rect x="8" y="22" width="44" height="30" rx="5" fill="var(--il-card)" stroke="var(--il-stroke)" strokeWidth="1" />
+                <line x1="15" y1="32" x2="43" y2="32" stroke="var(--il-accent2)" strokeWidth="2" strokeLinecap="round" />
+                <line x1="15" y1="40" x2="37" y2="40" stroke="var(--il-text-line)" strokeWidth="2" strokeLinecap="round" />
+            </g>
+            {/* Progress dots at bottom */}
+            <circle cx="80" cy="108" r="4" fill="var(--il-accent1)" opacity="0.8" />
+            <circle cx="100" cy="108" r="4" fill="var(--il-accent2)" opacity="0.6" />
+            <circle cx="120" cy="108" r="4" fill="var(--il-accent3)" opacity="0.4" />
+        </svg>
+    );
+}
 
 export default function MainPage({ session }: { session: any }) {
     const navigate = useNavigate();
@@ -256,22 +361,32 @@ export default function MainPage({ session }: { session: any }) {
 
     return (
         <div className="main-page">
+            {/* Animated background decoration */}
+            <div className="main-bg-decor">
+                <div className="bg-orb bg-orb-1"></div>
+                <div className="bg-orb bg-orb-2"></div>
+                <div className="bg-orb bg-orb-3"></div>
+            </div>
+
             <div className="main-content-logged-in main-content-area">
                 <div className="split-container meetings-split-container">
-                    <div className="recent-sessions-sidebar">
-                        <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <HistoryIcon /> Recent Sessions
-                        </h2>
+                    <div className="recent-sessions-sidebar anim-slide-left">
+                        <div className="sidebar-header">
+                            <RecentSessionsIllustration />
+                            <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <HistoryIcon /> Recent Sessions
+                            </h2>
+                        </div>
                         {recentMeetings.length === 0 ? (
-                            <p>No recent meetings found.</p>
+                            <p className="empty-state-text">No recent meetings found.</p>
                         ) : (
                             <ul className="recent-meetings-list">
                                 {recentMeetings.map((meeting, index) => (
                                     <li
                                         key={index}
-                                        className="recent-meeting-item"
+                                        className="recent-meeting-item anim-fade-up"
+                                        style={{ animationDelay: `${index * 0.08}s` }}
                                         onClick={() => navigate(`/session/${meeting.session_id}`)}
-                                        style={{ cursor: 'pointer' }}
                                     >
                                         <div className="meeting-source-type">
                                             {meeting.sessions?.source_type || 'Unknown Source'}
@@ -295,83 +410,87 @@ export default function MainPage({ session }: { session: any }) {
                             </button>
                         )}
                     </div>
-                    <div className="split-middle">
-                        <h2>Start New Session</h2>
-                        <form
-                            className="form-widget form-container"
-                            onSubmit={handleZoomSubmit}
-                        >
-                            <div>
-                                <label htmlFor="zoomUrl">Zoom URL</label>
-                                <input
-                                    className="inputField"
-                                    id="zoomUrl"
-                                    type="url"
-                                    placeholder="Enter Zoom Meeting URL"
-                                    value={zoomUrl}
-                                    required={true}
-                                    onChange={(e) => setZoomUrl(e.target.value)}
-                                />
-                            </div>
-                            <div>
-                                <button className={'button block primary'} disabled={loading}>
-                                    {loading ? 'Saving...' : 'Start Session'}
-                                </button>
-                            </div>
-                        </form>
-                        {message && (
-                            <div
-                                className="message feedback-message"
+                    <div className="split-middle anim-fade-up">
+                        <div className="section-card zoom-section-card">
+                            <ZoomMeetingIllustration />
+                            <h2>Start New Session</h2>
+                            <p className="section-subtitle">Connect to a live Zoom meeting and let AI capture everything.</p>
+                            <form
+                                className="form-widget form-container"
+                                onSubmit={handleZoomSubmit}
                             >
-                                {message}
-                            </div>
-                        )}
-                    </div>
-                    <div className="split-right">
-                        <h2>Analyze Audio</h2>
-                        <div
-                            className="form-widget form-container"
-                        >
-                            <div className="file-upload-container">
-                                <label
-                                    htmlFor="audioUpload"
-                                    className="file-upload-label"
-                                    onDragOver={handleDragOver}
-                                    onDrop={handleDrop}
-                                >
-                                    <div className="file-upload-icon">
-                                        <CloudUploadIcon fontSize="large" />
-                                    </div>
-                                    <span className="file-upload-text">
-                                        {audioFile ? audioFile.name : 'Choose Audio File'}
-                                    </span>
-                                    <span className="file-upload-subtext">Supports MP3, WAV, M4A</span>
-                                </label>
-                                <input
-                                    className="file-input-hidden"
-                                    id="audioUpload"
-                                    type="file"
-                                    accept="audio/*"
-                                    onChange={handleAudioUpload}
-                                />
-                            </div>
-
-                            {audioUrl && (
-                                <div className="audio-player-container">
-                                    <audio controls src={audioUrl} className="audio-player">
-                                        Your browser does not support the audio element.
-                                    </audio>
+                                <div>
+                                    <label htmlFor="zoomUrl">Zoom URL</label>
+                                    <input
+                                        className="inputField"
+                                        id="zoomUrl"
+                                        type="url"
+                                        placeholder="Enter Zoom Meeting URL"
+                                        value={zoomUrl}
+                                        required={true}
+                                        onChange={(e) => setZoomUrl(e.target.value)}
+                                    />
+                                </div>
+                                <div>
+                                    <button className={'button block primary pulse-btn'} disabled={loading}>
+                                        {loading ? 'Saving...' : 'Start Session'}
+                                    </button>
+                                </div>
+                            </form>
+                            {message && (
+                                <div className="message feedback-message">
+                                    {message}
                                 </div>
                             )}
+                        </div>
+                    </div>
+                    <div className="split-right anim-slide-right">
+                        <div className="section-card audio-section-card">
+                            <AudioWaveIllustration />
+                            <h2>Analyze Audio</h2>
+                            <p className="section-subtitle">Upload a recording and get instant AI-powered summaries.</p>
+                            <div className="form-widget form-container">
+                                <div className="file-upload-container">
+                                    <label
+                                        htmlFor="audioUpload"
+                                        className="file-upload-label"
+                                        onDragOver={handleDragOver}
+                                        onDrop={handleDrop}
+                                    >
+                                        <div className="file-upload-icon">
+                                            <CloudUploadIcon fontSize="large" />
+                                        </div>
+                                        <span className="file-upload-text">
+                                            {audioFile ? audioFile.name : 'Choose Audio File'}
+                                        </span>
+                                        <span className="file-upload-subtext">Supports MP3, WAV, M4A</span>
+                                    </label>
+                                    <input
+                                        className="file-input-hidden"
+                                        id="audioUpload"
+                                        type="file"
+                                        accept="audio/*"
+                                        onChange={handleAudioUpload}
+                                    />
+                                </div>
 
-                            <div>
-                                <button
-                                    className={'button block primary'}
-                                    onClick={handleSummarize}
-                                    disabled={!audioFile}
-                                >
-                                    Summarize
-                                </button>
+                                {audioUrl && (
+                                    <div className="audio-player-container">
+                                        <audio controls src={audioUrl} className="audio-player">
+                                            Your browser does not support the audio element.
+                                        </audio>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <button
+                                        className={'button block primary pulse-btn'}
+                                        onClick={handleSummarize}
+                                        disabled={!audioFile}
+                                    >
+                                        Summarize
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

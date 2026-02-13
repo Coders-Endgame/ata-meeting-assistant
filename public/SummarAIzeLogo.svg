@@ -1,0 +1,19 @@
+<svg width="500" height="500" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="circleClip">
+      <circle cx="100" cy="100" r="96" />
+    </clipPath>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="white" stroke="black" stroke-width="8" />
+  <g clip-path="url(#circleClip)">
+    <path d="M -10 115 
+             C 40 160, 100 135, 125 85 
+             Q 135 70, 148 95
+             Q 155 105, 165 85
+             Q 175 65, 210 90
+             L 210 210
+             L -10 210 Z" 
+          fill="#009FE3" stroke="black" stroke-width="8" stroke-linejoin="round" stroke-linecap="round" />
+  </g>
+  <circle cx="100" cy="100" r="96" fill="none" stroke="black" stroke-width="8" />
+</svg>

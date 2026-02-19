@@ -249,6 +249,7 @@ export default function MainPage({ session }: { session: any }) {
                 {
                     source_type: 'offline', // As requested
                     source_ref: uploadData.path, // Store the file path in storage
+                    processing_status: 'transcribing', // Mark as processing from the start
                 }
             ]).select();
 
@@ -262,7 +263,17 @@ export default function MainPage({ session }: { session: any }) {
                 user_id: session.user.id
             });
 
+            // Navigate immediately — processing happens in background
             navigate(`/session/${newSession.id}`);
+
+            // 3. Fire background transcription request (don't await)
+            fetch('http://localhost:3001/api/transcribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: newSession.id }),
+            }).catch(err => {
+                console.warn('Could not start transcription:', err);
+            });
 
         } catch (error: any) {
             console.error('Error creating offline session:', error);

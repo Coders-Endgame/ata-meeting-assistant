@@ -6,6 +6,7 @@ CREATE TABLE public.sessions (
   source_ref text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   source_type text NOT NULL,
+  processing_status text,
   CONSTRAINT sessions_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.action_items (

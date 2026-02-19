@@ -228,6 +228,42 @@ app.get('/api/bot/list', (req, res) => {
     res.json({ bots });
 });
 
+// Transcribe endpoint - proxy to Python summarizer service
+app.post('/api/transcribe', async (req, res) => {
+    const { sessionId } = req.body;
+
+    if (!sessionId) {
+        return res.status(400).json({ error: 'sessionId is required' });
+    }
+
+    try {
+        const response = await fetch('http://localhost:8000/transcribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: sessionId }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+            console.error(`[Transcribe] Error from Python service:`, errorData);
+            return res.status(response.status).json({
+                error: errorData.detail || 'Transcription failed'
+            });
+        }
+
+        const data = await response.json();
+        res.json(data);
+    } catch (error) {
+        console.error('[Transcribe] Error:', error.message);
+        if (error.cause && error.cause.code === 'ECONNREFUSED') {
+            return res.status(503).json({
+                error: 'Summarizer service is not running. Start it with: cd services/summarizer && uvicorn main:app --reload'
+            });
+        }
+        res.status(500).json({ error: 'Failed to connect to summarizer service' });
+    }
+});
+
 // Summarize endpoint - proxy to Python summarizer service
 app.post('/api/summarize', async (req, res) => {
     const { sessionId } = req.body;

@@ -74,6 +74,7 @@ export default function SessionPage() {
     const [actionItems, setActionItems] = useState<ActionItem[]>([]);
     const [sourceType, setSourceType] = useState<string>('');
     const [audioUrl, setAudioUrl] = useState<string>('');
+    const [processingStatus, setProcessingStatus] = useState<string | null>(null);
 
     // Bot status states
     const [botStatus, setBotStatus] = useState<BotStatus>({ running: false });
@@ -197,6 +198,63 @@ export default function SessionPage() {
         };
     }, [sessionId]);
 
+    // Real-time subscription for processing_status changes on sessions table
+    useEffect(() => {
+        if (!sessionId) return;
+
+        const channel = supabase
+            .channel(`session-status-${sessionId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'sessions',
+                    filter: `id=eq.${sessionId}`
+                },
+                (payload) => {
+                    const updated = payload.new as any;
+                    if (updated.processing_status !== undefined) {
+                        setProcessingStatus(updated.processing_status);
+
+                        // When completed, refetch session data to get summary + action items
+                        if (updated.processing_status === 'completed' && sessionId) {
+                            fetchSessionData(sessionId);
+                        }
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [sessionId]);
+
+    // Polling fallback for processing_status (in case realtime isn't enabled for sessions)
+    useEffect(() => {
+        if (!sessionId) return;
+        if (!processingStatus || processingStatus === 'completed' || processingStatus === 'failed') return;
+
+        const interval = setInterval(async () => {
+            const { data } = await supabase
+                .from('sessions')
+                .select('processing_status')
+                .eq('id', sessionId)
+                .single();
+
+            if (data && data.processing_status !== processingStatus) {
+                setProcessingStatus(data.processing_status);
+
+                if (data.processing_status === 'completed') {
+                    fetchSessionData(sessionId);
+                }
+            }
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [sessionId, processingStatus]);
+
     // Auto-scroll transcript panel when new transcripts arrive
     useEffect(() => {
         if (transcriptScrollRef.current) {
@@ -253,12 +311,13 @@ export default function SessionPage() {
             // Fetch Session Details (Source Type)
             const { data: sessionData, error: sessionError } = await supabase
                 .from('sessions')
-                .select('source_type, source_ref')
+                .select('source_type, source_ref, processing_status')
                 .eq('id', id)
                 .single();
 
             if (!sessionError && sessionData) {
                 setSourceType(sessionData.source_type || '');
+                setProcessingStatus(sessionData.processing_status || null);
 
                 // If offline audio, fetch the signed URL
                 if (sessionData.source_type === 'offline' && sessionData.source_ref) {
@@ -284,7 +343,7 @@ export default function SessionPage() {
                 .from('summaries')
                 .select('summary')
                 .eq('session_id', id)
-                .single();
+                .maybeSingle();
 
             if (!summaryError && summaryData) {
                 setSummary(summaryData.summary);
@@ -565,6 +624,15 @@ export default function SessionPage() {
                             </IconButton>
                         </Tooltip>
                     </div>
+
+                    {/* Audio Player for offline sessions */}
+                    {audioUrl && (
+                        <div className="toolbar-audio">
+                            <audio controls src={audioUrl} className="audio-player">
+                                Your browser does not support the audio element.
+                            </audio>
+                        </div>
+                    )}
                 </div>
 
                 <div className="toolbar-right">
@@ -589,14 +657,19 @@ export default function SessionPage() {
                         </div>
                     )}
 
-                    {/* Audio Player for offline sessions */}
-                    {audioUrl && (
-                        <div className="toolbar-audio">
-                            <audio controls src={audioUrl} className="audio-player">
-                                Your browser does not support the audio element.
-                            </audio>
+                    {/* Processing Status for offline sessions */}
+                    {sourceType === 'offline' && processingStatus && processingStatus !== 'completed' && (
+                        <div className="toolbar-bot-status">
+                            <AutoAwesomeIcon className="bot-icon" />
+                            <div className={`bot-status-badge ${processingStatus === 'failed' ? 'inactive' : 'preparing'}`}>
+                                <span className="bot-status-dot"></span>
+                                {processingStatus === 'transcribing' && 'Transcribing...'}
+                                {processingStatus === 'summarizing' && 'Summarizing...'}
+                                {processingStatus === 'failed' && 'Processing Failed'}
+                            </div>
                         </div>
                     )}
+
                 </div>
             </div>
 
@@ -907,6 +980,7 @@ export default function SessionPage() {
                     </div>
                 </div>
             )}
+
         </div>
     );
 }

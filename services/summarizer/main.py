@@ -1,10 +1,12 @@
 import os
 import json
 import logging
+import tempfile
 from pathlib import Path
 
 import httpx
-from fastapi import FastAPI, HTTPException
+import whisper
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -22,12 +24,24 @@ SUPABASE_URL = os.getenv("SUPABASE_URL", "http://127.0.0.1:54321")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1")
+WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base")
 
 if not SUPABASE_SERVICE_ROLE_KEY:
     logger.warning("SUPABASE_SERVICE_ROLE_KEY not set. Database operations will fail.")
 
 # --- Supabase Client ---
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+# --- Load Whisper model (lazy) ---
+_whisper_model = None
+
+def get_whisper_model():
+    global _whisper_model
+    if _whisper_model is None:
+        logger.info(f"Loading Whisper model: {WHISPER_MODEL}")
+        _whisper_model = whisper.load_model(WHISPER_MODEL)
+        logger.info("Whisper model loaded successfully")
+    return _whisper_model
 
 # --- FastAPI App ---
 app = FastAPI(title="Meeting Summarizer Service")
@@ -41,6 +55,9 @@ app.add_middleware(
 
 # --- Request / Response Models ---
 class SummarizeRequest(BaseModel):
+    session_id: str
+
+class TranscribeRequest(BaseModel):
     session_id: str
 
 class ActionItemOut(BaseModel):
@@ -68,16 +85,19 @@ Return ONLY valid JSON, no markdown fences, no extra text. Example format:
 {"summary": "The team discussed...", "action_items": [{"description": "Task description here", "assignee": null}]}"""
 
 
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
+def _update_processing_status(session_id: str, status: str | None):
+    """Update the processing_status of a session."""
+    try:
+        supabase.table("sessions").update(
+            {"processing_status": status}
+        ).eq("id", session_id).execute()
+        logger.info(f"Session {session_id} processing_status -> {status}")
+    except Exception as e:
+        logger.error(f"Failed to update processing_status: {e}")
 
 
-@app.post("/summarize", response_model=SummarizeResponse)
-async def summarize(req: SummarizeRequest):
-    session_id = req.session_id
-    logger.info(f"Summarize request for session: {session_id}")
-
+async def _run_summarization(session_id: str) -> dict:
+    """Internal summarization logic, reusable by both /summarize and /transcribe."""
     # 1. Fetch transcripts from Supabase
     result = supabase.table("transcripts") \
         .select("speaker, transcript, created_at") \
@@ -191,7 +211,147 @@ async def summarize(req: SummarizeRequest):
 
     logger.info(f"Saved {len(action_items_out)} action items to database")
 
-    return SummarizeResponse(summary=summary_text, action_items=action_items_out)
+    return {
+        "summary": summary_text,
+        "action_items": [item.model_dump() for item in action_items_out],
+    }
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+@app.post("/summarize", response_model=SummarizeResponse)
+async def summarize(req: SummarizeRequest):
+    session_id = req.session_id
+    logger.info(f"Summarize request for session: {session_id}")
+
+    result = await _run_summarization(session_id)
+    return SummarizeResponse(
+        summary=result["summary"],
+        action_items=[ActionItemOut(**item) for item in result["action_items"]],
+    )
+
+
+async def _transcribe_and_summarize(session_id: str):
+    """Background task: transcribe audio, then summarize."""
+    try:
+        # 1. Update status to transcribing
+        _update_processing_status(session_id, "transcribing")
+
+        # 2. Fetch session to get source_ref
+        session_result = supabase.table("sessions") \
+            .select("source_ref, source_type") \
+            .eq("id", session_id) \
+            .single() \
+            .execute()
+
+        session_data = session_result.data
+        if not session_data or not session_data.get("source_ref"):
+            logger.error(f"Session {session_id} has no source_ref")
+            _update_processing_status(session_id, "failed")
+            return
+
+        source_ref = session_data["source_ref"]
+        logger.info(f"Downloading audio from storage: {source_ref}")
+
+        # 3. Download audio file from Supabase Storage
+        file_bytes = supabase.storage.from_("audio-uploads").download(source_ref)
+
+        if not file_bytes:
+            logger.error(f"Failed to download audio file: {source_ref}")
+            _update_processing_status(session_id, "failed")
+            return
+
+        # 4. Write to temp file and run Whisper
+        file_ext = source_ref.rsplit(".", 1)[-1] if "." in source_ref else "wav"
+        with tempfile.NamedTemporaryFile(suffix=f".{file_ext}", delete=False) as tmp:
+            tmp.write(file_bytes)
+            tmp_path = tmp.name
+
+        try:
+            logger.info(f"Running Whisper transcription on {tmp_path}")
+            model = get_whisper_model()
+            result = model.transcribe(tmp_path)
+        finally:
+            os.unlink(tmp_path)
+
+        segments = result.get("segments", [])
+        full_text = result.get("text", "")
+
+        if not segments and not full_text:
+            logger.warning(f"Whisper returned empty transcription for session {session_id}")
+            _update_processing_status(session_id, "failed")
+            return
+
+        logger.info(f"Whisper transcription complete: {len(segments)} segments, {len(full_text)} chars")
+
+        # 5. Save transcript segments to database
+        if segments:
+            for segment in segments:
+                text = segment.get("text", "").strip()
+                if not text:
+                    continue
+
+                supabase.table("transcripts").insert({
+                    "session_id": session_id,
+                    "speaker": "Speaker",
+                    "transcript": text,
+                }).execute()
+        else:
+            # Fallback: save as single transcript entry
+            supabase.table("transcripts").insert({
+                "session_id": session_id,
+                "speaker": "Speaker",
+                "transcript": full_text.strip(),
+            }).execute()
+
+        logger.info(f"Saved transcripts to database for session {session_id}")
+
+        # 6. Now summarize
+        _update_processing_status(session_id, "summarizing")
+
+        try:
+            await _run_summarization(session_id)
+            logger.info(f"Summarization complete for session {session_id}")
+        except Exception as e:
+            logger.error(f"Summarization failed for session {session_id}: {e}")
+            # Still mark as completed since transcription succeeded
+            _update_processing_status(session_id, "completed")
+            return
+
+        # 7. Mark as completed
+        _update_processing_status(session_id, "completed")
+
+    except Exception as e:
+        logger.error(f"Transcription pipeline failed for session {session_id}: {e}")
+        _update_processing_status(session_id, "failed")
+
+
+@app.post("/transcribe")
+async def transcribe(req: TranscribeRequest, background_tasks: BackgroundTasks):
+    """Start transcription + summarization pipeline in the background."""
+    session_id = req.session_id
+    logger.info(f"Transcribe request for session: {session_id}")
+
+    # Verify session exists
+    session_result = supabase.table("sessions") \
+        .select("id, source_ref, source_type") \
+        .eq("id", session_id) \
+        .single() \
+        .execute()
+
+    if not session_result.data:
+        raise HTTPException(status_code=404, detail="Session not found.")
+
+    if not session_result.data.get("source_ref"):
+        raise HTTPException(status_code=400, detail="Session has no audio file.")
+
+    # Run transcription in background
+    background_tasks.add_task(_transcribe_and_summarize, session_id)
+
+    return {"status": "processing", "message": "Transcription started. Check processing_status for progress."}
 
 
 if __name__ == "__main__":

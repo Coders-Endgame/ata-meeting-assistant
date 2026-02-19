@@ -29,12 +29,29 @@ if (SUPABASE_SERVICE_ROLE_KEY) {
     console.log('Supabase client initialized successfully');
 }
 
+// Load shared config
+const configPath = path.join(__dirname, '..', 'bot', 'config.json');
+let appConfig = {};
+try {
+    appConfig = JSON.parse(require('fs').readFileSync(configPath, 'utf-8'));
+    console.log('Loaded config:', appConfig);
+} catch (err) {
+    console.warn('Could not load config.json, using defaults');
+}
+
 // Track running bot processes
 const runningBots = new Map();
 
 // Health check endpoint
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Config endpoint – expose frontend-relevant settings
+app.get('/api/config', (req, res) => {
+    res.json({
+        live_summary_interval_sec: appConfig.live_summary_interval_sec || 15
+    });
 });
 
 // Start bot endpoint

@@ -84,6 +84,11 @@ export default function SessionPage() {
 
     // Summarization states
     const [isSummarizing, setIsSummarizing] = useState(false);
+    const [summaryMode, setSummaryMode] = useState<'live' | 'manual'>('manual');
+    const liveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const [liveSummaryInterval, setLiveSummaryInterval] = useState(15);
+    const isSummarizingRef = useRef(false);
+    const transcriptsLengthRef = useRef(0);
 
     const [loading, setLoading] = useState(true);
     const [openShareDialog, setOpenShareDialog] = useState(false);
@@ -120,6 +125,18 @@ export default function SessionPage() {
             setBotLoading(false);
         }
     }, [sessionId]);
+
+    // Fetch frontend config on mount
+    useEffect(() => {
+        fetch('http://localhost:3001/api/config')
+            .then(res => res.json())
+            .then(data => {
+                if (data.live_summary_interval_sec) {
+                    setLiveSummaryInterval(data.live_summary_interval_sec);
+                }
+            })
+            .catch(err => console.warn('Could not fetch config:', err));
+    }, []);
 
     useEffect(() => {
         if (sessionId) {
@@ -257,6 +274,43 @@ export default function SessionPage() {
 
         return () => clearInterval(interval);
     }, [sessionId, processingStatus]);
+
+    // Keep refs in sync so the interval callback reads latest values without being a dependency
+    useEffect(() => {
+        isSummarizingRef.current = isSummarizing;
+    }, [isSummarizing]);
+
+    useEffect(() => {
+        transcriptsLengthRef.current = transcripts.length;
+    }, [transcripts.length]);
+
+    // Auto-generate summary on interval in live mode
+    useEffect(() => {
+        if (summaryMode === 'live' && botStatus.status === 'active' && sessionId) {
+            // Generate once immediately on switching to live
+            if (transcriptsLengthRef.current > 0 && !isSummarizingRef.current) {
+                handleGenerateSummary();
+            }
+            liveIntervalRef.current = setInterval(() => {
+                if (transcriptsLengthRef.current > 0 && !isSummarizingRef.current) {
+                    handleGenerateSummary();
+                }
+            }, liveSummaryInterval * 1000);
+        }
+        return () => {
+            if (liveIntervalRef.current) {
+                clearInterval(liveIntervalRef.current);
+                liveIntervalRef.current = null;
+            }
+        };
+    }, [summaryMode, botStatus.status, sessionId, liveSummaryInterval]);
+
+    // Reset to manual when bot goes offline
+    useEffect(() => {
+        if (botStatus.status !== 'active') {
+            setSummaryMode('manual');
+        }
+    }, [botStatus.status]);
 
     // Auto-scroll transcript panel when new transcripts arrive
     useEffect(() => {
@@ -846,41 +900,68 @@ export default function SessionPage() {
                     sx={{ backgroundColor: 'var(--widget-bg)' }}
                 >
                     <Box p={2.5} height="100%" display="flex" flexDirection="column">
-                        {/* Summary Header with Generate Button */}
+                        {/* Summary Header with Generate Button or Live/Manual Toggle */}
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                             <Typography variant="h6" sx={{ fontWeight: 600, color: 'var(--heading-color)' }}>
                                 Meeting Summary
                             </Typography>
-                            <Button
-                                variant="contained"
-                                size="small"
-                                startIcon={isSummarizing ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
-                                onClick={handleGenerateSummary}
-                                disabled={isSummarizing || transcripts.length === 0}
-                                className="generate-btn"
-                            >
-                                {isSummarizing ? 'Generating...' : summary ? 'Regenerate' : 'Generate'}
-                            </Button>
-                        </Box>
 
-                        {/* Generation progress bar */}
-                        {isSummarizing && (
-                            <Box sx={{ mb: 1 }}>
-                                <LinearProgress
-                                    sx={{
-                                        borderRadius: 2,
-                                        height: 3,
-                                        backgroundColor: 'var(--border-color)',
-                                        '& .MuiLinearProgress-bar': {
-                                            backgroundColor: 'var(--primary-color)',
-                                        }
-                                    }}
-                                />
-                                <Typography variant="caption" sx={{ color: 'var(--text-color-secondary)', mt: 0.5, display: 'block' }}>
-                                    AI is analyzing the transcript...
-                                </Typography>
-                            </Box>
-                        )}
+                            {botStatus.status === 'active' ? (
+                                <Box display="flex" alignItems="center" gap={1.5}>
+                                    {/* Live / Manual Toggle */}
+                                    <div className="summary-mode-toggle">
+                                        <button
+                                            className={`mode-btn ${summaryMode === 'live' ? 'active' : ''}`}
+                                            onClick={() => setSummaryMode('live')}
+                                        >
+                                            <span className="live-dot"></span>
+                                            Live
+                                        </button>
+                                        <button
+                                            className={`mode-btn ${summaryMode === 'manual' ? 'active' : ''}`}
+                                            onClick={() => setSummaryMode('manual')}
+                                        >
+                                            Manual
+                                        </button>
+                                    </div>
+
+                                    {/* Show Generate button only in manual mode */}
+                                    {summaryMode === 'manual' && (
+                                        <Button
+                                            variant="contained"
+                                            size="small"
+                                            startIcon={isSummarizing ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
+                                            onClick={handleGenerateSummary}
+                                            disabled={isSummarizing || transcripts.length === 0}
+                                            className="generate-btn"
+                                        >
+                                            {isSummarizing ? 'Generating...' : summary ? 'Regenerate' : 'Generate'}
+                                        </Button>
+                                    )}
+
+                                    {/* Show auto-refresh indicator in live mode */}
+                                    {summaryMode === 'live' && (
+                                        <Chip
+                                            icon={isSummarizing ? <CircularProgress size={12} color="inherit" /> : <AutoAwesomeIcon sx={{ fontSize: '0.9rem !important' }} />}
+                                            label={isSummarizing ? 'Updating...' : `Auto · ${liveSummaryInterval}s`}
+                                            size="small"
+                                            className="live-indicator-chip"
+                                        />
+                                    )}
+                                </Box>
+                            ) : (
+                                <Button
+                                    variant="contained"
+                                    size="small"
+                                    startIcon={isSummarizing ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
+                                    onClick={handleGenerateSummary}
+                                    disabled={isSummarizing || transcripts.length === 0}
+                                    className="generate-btn"
+                                >
+                                    {isSummarizing ? 'Generating...' : summary ? 'Regenerate' : 'Generate'}
+                                </Button>
+                            )}
+                        </Box>
 
                         <Divider sx={{ mb: 2, borderColor: 'var(--border-color)' }} />
 

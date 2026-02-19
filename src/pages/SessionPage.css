@@ -294,6 +294,76 @@
   opacity: 0.6 !important;
 }
 
+/* ========== Live / Manual Toggle ========== */
+.summary-mode-toggle {
+  display: inline-flex;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  background-color: var(--input-bg);
+}
+
+.summary-mode-toggle .mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-color-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.summary-mode-toggle .mode-btn:first-child {
+  border-right: 1px solid var(--border-color);
+}
+
+.summary-mode-toggle .mode-btn.active {
+  background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+  color: #fff;
+}
+
+.summary-mode-toggle .mode-btn:not(.active):hover {
+  background-color: var(--border-color);
+  color: var(--text-color);
+}
+
+.summary-mode-toggle .mode-btn .live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+  flex-shrink: 0;
+}
+
+.summary-mode-toggle .mode-btn.active .live-dot {
+  background-color: #22c55e;
+  animation: livePulse 1.5s infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.live-indicator-chip {
+  background-color: rgba(34, 197, 94, 0.12) !important;
+  color: #22c55e !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  height: 24px !important;
+  border: 1px solid rgba(34, 197, 94, 0.25) !important;
+}
+
+.live-indicator-chip .MuiChip-icon {
+  color: #22c55e !important;
+}
+
 /* ========== Action Items ========== */
 .action-items-section {
   border-top: 1px solid var(--border-color);

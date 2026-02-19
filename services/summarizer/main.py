@@ -294,10 +294,13 @@ async def _transcribe_and_summarize(session_id: str):
                 if not text:
                     continue
 
+                start_ms = int(segment.get("start", 0) * 1000)
+
                 supabase.table("transcripts").insert({
                     "session_id": session_id,
                     "speaker": "Speaker",
                     "transcript": text,
+                    "timestamp_ms": start_ms,
                 }).execute()
         else:
             # Fallback: save as single transcript entry
@@ -305,6 +308,7 @@ async def _transcribe_and_summarize(session_id: str):
                 "session_id": session_id,
                 "speaker": "Speaker",
                 "transcript": full_text.strip(),
+                "timestamp_ms": 0,
             }).execute()
 
         logger.info(f"Saved transcripts to database for session {session_id}")

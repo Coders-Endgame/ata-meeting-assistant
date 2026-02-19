@@ -66,6 +66,7 @@ CREATE TABLE public.transcripts (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   transcript text NOT NULL,
   session_id uuid NOT NULL,
+  timestamp_ms integer,
   CONSTRAINT transcripts_pkey PRIMARY KEY (id),
   CONSTRAINT transcripts_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.sessions(id)
 );

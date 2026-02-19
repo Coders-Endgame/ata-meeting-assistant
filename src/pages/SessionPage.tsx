@@ -34,6 +34,7 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import './SessionPage.css';
 
 interface Participant {
@@ -46,6 +47,7 @@ interface TranscriptItem {
     speaker: string;
     transcript: string;
     created_at: string;
+    timestamp_ms?: number | null;
 }
 
 interface ActionItem {
@@ -98,6 +100,7 @@ export default function SessionPage() {
     const isResizing = useRef(false);
     const transcriptRef = useRef<HTMLDivElement>(null);
     const summaryRef = useRef<HTMLDivElement>(null);
+    const audioRef = useRef<HTMLAudioElement>(null);
     const transcriptScrollRef = useRef<HTMLDivElement>(null);
     const dragInfo = useRef<{ startX: number, startRatio: number, totalWidth: number } | null>(null);
 
@@ -567,6 +570,20 @@ export default function SessionPage() {
         }
     };
 
+    const handleSeekAudio = (timestampMs: number) => {
+        if (audioRef.current) {
+            audioRef.current.currentTime = timestampMs / 1000;
+            audioRef.current.play();
+        }
+    };
+
+    const formatTimestamp = (ms: number): string => {
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    };
+
     const filteredParticipants = participants.filter(p =>
         p.display_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -628,7 +645,7 @@ export default function SessionPage() {
                     {/* Audio Player for offline sessions */}
                     {audioUrl && (
                         <div className="toolbar-audio">
-                            <audio controls src={audioUrl} className="audio-player">
+                            <audio ref={audioRef} controls src={audioUrl} className="audio-player">
                                 Your browser does not support the audio element.
                             </audio>
                         </div>
@@ -761,15 +778,38 @@ export default function SessionPage() {
                                                 '&:last-child': { borderBottom: 'none' }
                                             }}
                                         >
+                                            {sourceType === 'offline' && t.timestamp_ms != null && audioUrl && (
+                                                <Tooltip title={`Jump to ${formatTimestamp(t.timestamp_ms)}`}>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => handleSeekAudio(t.timestamp_ms!)}
+                                                        className="transcript-play-btn"
+                                                        sx={{ mr: 1, mt: 0.5, flexShrink: 0 }}
+                                                    >
+                                                        <PlayCircleOutlineIcon sx={{ fontSize: '1.1rem' }} />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            )}
                                             <ListItemText
                                                 primary={
                                                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
                                                         <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'var(--primary-color)' }}>
                                                             {t.speaker || 'Unknown Speaker'}
                                                         </Typography>
-                                                        <Typography variant="caption" sx={{ color: 'var(--text-color-secondary)' }}>
-                                                            {new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </Typography>
+                                                        <Box display="flex" alignItems="center" gap={1}>
+                                                            {sourceType === 'offline' && t.timestamp_ms != null && (
+                                                                <Chip
+                                                                    label={formatTimestamp(t.timestamp_ms)}
+                                                                    size="small"
+                                                                    className="timestamp-chip"
+                                                                />
+                                                            )}
+                                                            {sourceType !== 'offline' && (
+                                                                <Typography variant="caption" sx={{ color: 'var(--text-color-secondary)' }}>
+                                                                    {new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                </Typography>
+                                                            )}
+                                                        </Box>
                                                     </Box>
                                                 }
                                                 secondary={

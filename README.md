@@ -1,11 +1,12 @@
 # Ata Meeting Assistant
 
-This is a React-based meeting assistant application built with Vite and Supabase. It allows users to manage meeting sessions, automatically transcribe Zoom meetings in real-time, and generate summaries.
+This is a React-based meeting assistant application built with Vite and Supabase. It allows users to manage meeting sessions, automatically transcribe Zoom meetings in real-time, and generate AI-powered summaries and action items.
 
 ## Features
 
 - **Zoom Bot Integration**: Automatically join Zoom meetings and transcribe audio in real-time
 - **Real-time Transcripts**: Watch transcripts appear as they're spoken
+- **AI Summary & Action Items**: Generate meeting summaries and action items using a local LLM (Ollama)
 - **Session Management**: Create and join meeting sessions
 - **Audio Upload**: Upload audio files for transcription and summarization
 
@@ -16,6 +17,8 @@ Before you begin, ensure you have met the following requirements:
 *   **Node.js**: You need to have Node.js installed on your machine.
 *   **npm**: This project uses npm for package management.
 *   **Docker Desktop**: You need Docker Desktop installed and running for both Supabase and the Zoom bot.
+*   **Python 3.9+**: Required for the AI summarizer service.
+*   **Ollama**: Local LLM runtime for AI-powered summaries. Install from [ollama.ai](https://ollama.ai) or `brew install ollama`.
 
 ## Getting Started
 
@@ -70,6 +73,10 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_from_CLI_output
 
 # For backend server and bot
 SUPABASE_URL=http://127.0.0.1:54321
+
+# For summarizer service (Ollama)
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_MODEL=llama3.1
 ```
 
 ### 5. Database Setup
@@ -86,9 +93,29 @@ docker compose build
 cd ..
 ```
 
-### 7. Start the Backend API Server
+### 7. Set Up the AI Summarizer Service
 
-The API server manages bot instances and communicates with Docker:
+Start Ollama and pull the language model:
+
+```bash
+ollama serve           # Start the Ollama server (keep running)
+ollama pull llama3.1   # Pull the model (~4.7GB, one-time)
+```
+
+Install Python dependencies and start the service:
+
+```bash
+cd services/summarizer
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+cd ../..
+```
+
+The summarizer service will run at `http://localhost:8000`.
+
+### 8. Start the Backend API Server
+
+The API server manages bot instances and proxies summarization requests:
 
 ```bash
 cd server
@@ -97,7 +124,7 @@ npm start
 
 The server will run at `http://localhost:3001`.
 
-### 8. Run the Frontend Application
+### 9. Run the Frontend Application
 
 In a new terminal, start the Vite development server:
 
@@ -113,6 +140,8 @@ The application should now be running at `http://localhost:5173` (or another por
 2. Enter a Zoom meeting URL in the dashboard
 3. The bot will automatically join the meeting and start transcribing
 4. Transcripts appear in real-time on the session page
+5. Click **"Generate"** in the summary panel to produce an AI summary and action items
+6. Toggle action item checkboxes to mark them as completed
 
 ## Architecture
 
@@ -124,6 +153,12 @@ The application should now be running at `http://localhost:5173` (or another por
 │                 │     │                 │     │                 │
 └────────┬────────┘     └────────┬────────┘     └────────┬────────┘
          │                       │                       │
+         │                       │                       │
+         │               ┌───────┴────────┐              │
+         │               │  Summarizer    │              │
+         │               │  (FastAPI +    │              │
+         │               │   Ollama LLM)  │              │
+         │               └───────┬────────┘              │
          │                       │                       │
          ▼                       ▼                       ▼
 ┌─────────────────────────────────────────────────────────────────┐
@@ -156,6 +191,7 @@ npx supabase stop
 | `/api/bot/stop` | POST | Stop bot for a session |
 | `/api/bot/status/:sessionId` | GET | Check bot status |
 | `/api/bot/list` | GET | List all running bots |
+| `/api/summarize` | POST | Generate AI summary & action items |
 
 ## Technologies Used
 
@@ -164,6 +200,8 @@ npx supabase stop
 *   [TypeScript](https://www.typescriptlang.org/)
 *   [Supabase](https://supabase.com/)
 *   [Express.js](https://expressjs.com/)
+*   [FastAPI](https://fastapi.tiangolo.com/) (Python summarizer service)
+*   [Ollama](https://ollama.ai/) (local LLM runtime)
 *   [Docker](https://www.docker.com/)
 *   [Playwright](https://playwright.dev/) (for browser automation)
 *   [Faster-Whisper](https://github.com/guillaumekln/faster-whisper) (for speech-to-text)

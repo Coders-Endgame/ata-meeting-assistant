@@ -1,13 +1,12 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
-CREATE TABLE public.action_item_assignees (
+CREATE TABLE public.sessions (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
+  source_ref text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
-  action_item_id uuid NOT NULL,
-  assigned_to text,
-  CONSTRAINT action_item_assignees_pkey PRIMARY KEY (id),
-  CONSTRAINT action_item_assignees_action_item_id_fkey FOREIGN KEY (action_item_id) REFERENCES public.action_items(id)
+  source_type text NOT NULL,
+  CONSTRAINT sessions_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.action_items (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -17,6 +16,14 @@ CREATE TABLE public.action_items (
   session_id uuid NOT NULL,
   CONSTRAINT action_items_pkey PRIMARY KEY (id),
   CONSTRAINT action_items_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.sessions(id)
+);
+CREATE TABLE public.action_item_assignees (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  action_item_id uuid NOT NULL,
+  assigned_to text,
+  CONSTRAINT action_item_assignees_pkey PRIMARY KEY (id),
+  CONSTRAINT action_item_assignees_action_item_id_fkey FOREIGN KEY (action_item_id) REFERENCES public.action_items(id)
 );
 CREATE TABLE public.bots (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -43,13 +50,6 @@ CREATE TABLE public.session_member (
   CONSTRAINT session_member_pkey PRIMARY KEY (id),
   CONSTRAINT session_member_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.sessions(id),
   CONSTRAINT session_member_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
-);
-CREATE TABLE public.sessions (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  source_ref text,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  source_type text NOT NULL,
-  CONSTRAINT sessions_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.summaries (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

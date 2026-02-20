@@ -11,7 +11,11 @@ import {
     Button,
     TextField,
     Typography,
-    Divider
+    Divider,
+    Select,
+    FormControl,
+    InputLabel,
+    CircularProgress
 } from '@mui/material';
 import { supabase } from '../supabaseClient';
 import './Topbar.css';
@@ -35,6 +39,13 @@ export default function Topbar({ session, theme, toggleTheme }: TopbarProps) {
     const [lastSignIn, setLastSignIn] = useState('');
     const [accountCreated, setAccountCreated] = useState('');
     const [accountMessage, setAccountMessage] = useState('');
+
+    // Settings Dialog State
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const [availableModels, setAvailableModels] = useState<string[]>([]);
+    const [selectedModel, setSelectedModel] = useState('');
+    const [settingsLoading, setSettingsLoading] = useState(false);
+    const [settingsMessage, setSettingsMessage] = useState('');
 
     const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -131,6 +142,66 @@ export default function Topbar({ session, theme, toggleTheme }: TopbarProps) {
         }
     };
 
+    // Settings handlers
+    const handleSettingsOpen = async () => {
+        setSettingsLoading(true);
+        setSettingsMessage('');
+        setSettingsOpen(true);
+        handleMenuClose();
+
+        try {
+            // Fetch available models
+            const modelsRes = await fetch('http://localhost:3001/api/models');
+            if (modelsRes.ok) {
+                const modelsData = await modelsRes.json();
+                setAvailableModels(modelsData.models || []);
+            } else {
+                setSettingsMessage('Could not load models. Is Ollama running?');
+            }
+
+            // Fetch current preference
+            const userId = session?.user?.id;
+            if (userId) {
+                const prefRes = await fetch(`http://localhost:3001/api/preferences/${userId}`);
+                if (prefRes.ok) {
+                    const prefData = await prefRes.json();
+                    setSelectedModel(prefData.preferred_model || '');
+                }
+            }
+        } catch (err: any) {
+            setSettingsMessage(`Error loading settings: ${err.message}`);
+        } finally {
+            setSettingsLoading(false);
+        }
+    };
+
+    const handleSettingsClose = () => {
+        setSettingsOpen(false);
+    };
+
+    const handleSaveSettings = async () => {
+        setSettingsMessage('Saving...');
+        try {
+            const userId = session?.user?.id;
+            if (!userId) throw new Error('Not logged in');
+
+            const res = await fetch(`http://localhost:3001/api/preferences/${userId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ preferred_model: selectedModel }),
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || 'Failed to save');
+            }
+
+            setSettingsMessage('Settings saved successfully!');
+        } catch (error: any) {
+            setSettingsMessage(`Error: ${error.message}`);
+        }
+    };
+
     const user = session?.user;
     const userMetadata = user?.user_metadata || {};
     const { first_name, last_name } = userMetadata;
@@ -182,6 +253,7 @@ export default function Topbar({ session, theme, toggleTheme }: TopbarProps) {
                             }}
                         >
                             <MenuItem onClick={handleAccountOpen} className="user-menu-item">Account</MenuItem>
+                            <MenuItem onClick={handleSettingsOpen} className="user-menu-item">Settings</MenuItem>
                             <MenuItem onClick={handleLogout} className="user-menu-item">Sign Out</MenuItem>
                         </Menu>
 
@@ -252,6 +324,56 @@ export default function Topbar({ session, theme, toggleTheme }: TopbarProps) {
                             <DialogActions>
                                 <Button onClick={handleAccountClose} className="account-close-btn">Close</Button>
                                 <Button onClick={handleUpdateAccount} variant="contained" className="account-update-btn">Update Account</Button>
+                            </DialogActions>
+                        </Dialog>
+
+                        {/* Settings Dialog */}
+                        <Dialog open={settingsOpen} onClose={handleSettingsClose} fullWidth maxWidth="sm" className="settings-dialog">
+                            <DialogTitle className="settings-dialog-title">Settings</DialogTitle>
+                            <DialogContent>
+                                <Typography variant="subtitle2" sx={{ color: 'var(--text-color-secondary)', mt: 1, mb: 2 }}>
+                                    Choose which LLM model to use for summarization and chat.
+                                </Typography>
+
+                                {settingsLoading ? (
+                                    <div className="settings-loading">
+                                        <CircularProgress size={28} />
+                                        <Typography variant="body2" sx={{ ml: 2, color: 'var(--text-color-secondary)' }}>
+                                            Loading models...
+                                        </Typography>
+                                    </div>
+                                ) : (
+                                    <FormControl fullWidth variant="outlined" className="settings-select">
+                                        <InputLabel id="model-select-label">Preferred Model</InputLabel>
+                                        <Select
+                                            labelId="model-select-label"
+                                            value={selectedModel}
+                                            onChange={(e) => setSelectedModel(e.target.value)}
+                                            label="Preferred Model"
+                                        >
+                                            {availableModels.map((model) => (
+                                                <MenuItem key={model} value={model}>{model}</MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                )}
+
+                                {settingsMessage && (
+                                    <Typography color="primary" variant="body2" style={{ marginTop: 12 }}>
+                                        {settingsMessage}
+                                    </Typography>
+                                )}
+                            </DialogContent>
+                            <DialogActions>
+                                <Button onClick={handleSettingsClose} className="settings-close-btn">Close</Button>
+                                <Button
+                                    onClick={handleSaveSettings}
+                                    variant="contained"
+                                    className="settings-save-btn"
+                                    disabled={settingsLoading || !selectedModel}
+                                >
+                                    Save
+                                </Button>
                             </DialogActions>
                         </Dialog>
                     </>

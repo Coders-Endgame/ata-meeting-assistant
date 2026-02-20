@@ -164,3 +164,77 @@
 .user-menu-item:hover {
   background-color: var(--input-bg) !important;
 }
+
+/* Settings Dialog Styling */
+
+.settings-dialog .MuiPaper-root {
+  background-color: var(--widget-bg) !important;
+  color: var(--text-color) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.settings-dialog-title {
+  color: var(--heading-color) !important;
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 600 !important;
+}
+
+.settings-loading {
+  display: flex;
+  align-items: center;
+  padding: 16px 0;
+}
+
+/* Select / FormControl */
+.settings-select .MuiOutlinedInput-root {
+  color: var(--input-text) !important;
+  background-color: var(--input-bg) !important;
+}
+
+.settings-select .MuiInputLabel-root {
+  color: var(--text-color-secondary) !important;
+}
+
+.settings-select .MuiInputLabel-root.Mui-focused {
+  color: var(--primary-color) !important;
+}
+
+.settings-select .MuiOutlinedInput-notchedOutline {
+  border-color: var(--input-border) !important;
+}
+
+.settings-select .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: var(--text-color-secondary) !important;
+}
+
+.settings-select .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--primary-color) !important;
+}
+
+.settings-select .MuiSvgIcon-root {
+  color: var(--text-color) !important;
+}
+
+/* Buttons */
+.settings-close-btn {
+  color: var(--text-color) !important;
+}
+
+.settings-close-btn:hover {
+  background-color: var(--input-bg) !important;
+}
+
+.settings-save-btn {
+  background-color: var(--primary-color) !important;
+  color: white !important;
+}
+
+.settings-save-btn:hover {
+  background-color: var(--primary-hover) !important;
+}
+
+.settings-save-btn.Mui-disabled {
+  background-color: var(--border-color) !important;
+  color: var(--text-color-secondary) !important;
+}

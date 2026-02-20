@@ -32,6 +32,8 @@ as $$
 begin
   insert into public.profiles (id, first_name, last_name, email)
   values (new.id, new.raw_user_meta_data ->> 'first_name', new.raw_user_meta_data ->> 'last_name', new.email);
+  insert into public.user_preferences (user_id)
+  values (new.id);
   return new;
 end;
 $$;

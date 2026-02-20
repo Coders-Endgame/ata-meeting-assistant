@@ -70,3 +70,11 @@ CREATE TABLE public.transcripts (
   CONSTRAINT transcripts_pkey PRIMARY KEY (id),
   CONSTRAINT transcripts_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.sessions(id)
 );
+CREATE TABLE public.user_preferences (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL UNIQUE,
+  preferred_model text NOT NULL DEFAULT 'llama3.1:latest',
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT user_preferences_pkey PRIMARY KEY (id),
+  CONSTRAINT user_preferences_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+);

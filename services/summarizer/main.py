@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import tempfile
+from typing import Optional
 from pathlib import Path
 
 import httpx
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 SUPABASE_URL = os.getenv("SUPABASE_URL", "http://127.0.0.1:54321")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "")
 WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base")
 
 if not SUPABASE_SERVICE_ROLE_KEY:
@@ -56,9 +57,11 @@ app.add_middleware(
 # --- Request / Response Models ---
 class SummarizeRequest(BaseModel):
     session_id: str
+    model: Optional[str] = None
 
 class TranscribeRequest(BaseModel):
     session_id: str
+    model: Optional[str] = None
 
 class ActionItemOut(BaseModel):
     id: str | None = None
@@ -96,7 +99,7 @@ def _update_processing_status(session_id: str, status: str | None):
         logger.error(f"Failed to update processing_status: {e}")
 
 
-async def _run_summarization(session_id: str) -> dict:
+async def _run_summarization(session_id: str, model: Optional[str] = None) -> dict:
     """Internal summarization logic, reusable by both /summarize and /transcribe."""
     # 1. Fetch transcripts from Supabase
     result = supabase.table("transcripts") \
@@ -116,6 +119,7 @@ async def _run_summarization(session_id: str) -> dict:
     logger.info(f"Built transcript with {len(transcripts)} entries ({len(transcript_text)} chars)")
 
     # 3. Call Ollama
+    use_model = model or OLLAMA_MODEL
     user_prompt = f"Here is the meeting transcript:\n\n{transcript_text}\n\nPlease analyze the transcript and produce the JSON output."
 
     try:
@@ -123,7 +127,7 @@ async def _run_summarization(session_id: str) -> dict:
             ollama_response = await client.post(
                 f"{OLLAMA_HOST}/api/generate",
                 json={
-                    "model": OLLAMA_MODEL,
+                    "model": use_model,
                     "prompt": f"{SYSTEM_PROMPT}\n\nUser: {user_prompt}",
                     "stream": False,
                     "format": "json",
@@ -222,19 +226,36 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/models")
+async def list_models():
+    """List available Ollama models."""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(f"{OLLAMA_HOST}/api/tags")
+            resp.raise_for_status()
+        data = resp.json()
+        models = [m["name"] for m in data.get("models", [])]
+        return {"models": models, "default": OLLAMA_MODEL}
+    except httpx.ConnectError:
+        raise HTTPException(status_code=503, detail="Cannot connect to Ollama.")
+    except Exception as e:
+        logger.error(f"Error listing models: {e}")
+        raise HTTPException(status_code=500, detail="Failed to list models.")
+
+
 @app.post("/summarize", response_model=SummarizeResponse)
 async def summarize(req: SummarizeRequest):
     session_id = req.session_id
-    logger.info(f"Summarize request for session: {session_id}")
+    logger.info(f"Summarize request for session: {session_id} (model={req.model})")
 
-    result = await _run_summarization(session_id)
+    result = await _run_summarization(session_id, model=req.model)
     return SummarizeResponse(
         summary=result["summary"],
         action_items=[ActionItemOut(**item) for item in result["action_items"]],
     )
 
 
-async def _transcribe_and_summarize(session_id: str):
+async def _transcribe_and_summarize(session_id: str, model: Optional[str] = None):
     """Background task: transcribe audio, then summarize."""
     try:
         # 1. Update status to transcribing
@@ -317,7 +338,7 @@ async def _transcribe_and_summarize(session_id: str):
         _update_processing_status(session_id, "summarizing")
 
         try:
-            await _run_summarization(session_id)
+            await _run_summarization(session_id, model=model)
             logger.info(f"Summarization complete for session {session_id}")
         except Exception as e:
             logger.error(f"Summarization failed for session {session_id}: {e}")
@@ -353,7 +374,7 @@ async def transcribe(req: TranscribeRequest, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=400, detail="Session has no audio file.")
 
     # Run transcription in background
-    background_tasks.add_task(_transcribe_and_summarize, session_id)
+    background_tasks.add_task(_transcribe_and_summarize, session_id, req.model)
 
     return {"status": "processing", "message": "Transcription started. Check processing_status for progress."}
 
@@ -368,6 +389,7 @@ class ChatRequest(BaseModel):
     session_id: str
     message: str
     history: list[ChatMessage] = []
+    model: Optional[str] = None
 
 class ChatResponse(BaseModel):
     reply: str
@@ -416,12 +438,13 @@ async def chat(req: ChatRequest):
     full_prompt = "\n\n".join(conversation_parts)
 
     # 4. Call Ollama
+    use_model = req.model or OLLAMA_MODEL
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
             ollama_response = await client.post(
                 f"{OLLAMA_HOST}/api/generate",
                 json={
-                    "model": OLLAMA_MODEL,
+                    "model": use_model,
                     "prompt": full_prompt,
                     "stream": False,
                 },

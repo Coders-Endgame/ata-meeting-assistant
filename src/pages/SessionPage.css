@@ -435,6 +435,49 @@
 }
 
 
+/* ========== Export Button & Menu ========== */
+.export-btn {
+  color: var(--text-color-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-sm) !important;
+  padding: 4px !important;
+  transition: all 0.2s ease !important;
+}
+
+.export-btn:hover {
+  color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  background-color: rgba(99, 102, 241, 0.08) !important;
+}
+
+.export-menu .MuiPaper-root {
+  background-color: var(--widget-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+  min-width: 180px;
+}
+
+.export-menu .MuiMenuItem-root {
+  color: var(--text-color) !important;
+  font-size: 0.85rem;
+  padding: 8px 16px;
+  gap: 4px;
+}
+
+.export-menu .MuiMenuItem-root:hover {
+  background-color: var(--input-bg) !important;
+}
+
+.export-menu .MuiListItemIcon-root {
+  color: var(--text-color-secondary) !important;
+  min-width: 32px !important;
+}
+
+.export-menu .MuiMenuItem-root:hover .MuiListItemIcon-root {
+  color: var(--primary-color) !important;
+}
+
 /* ========== Dialog Styles ========== */
 .share-dialog .MuiPaper-root {
   background-color: var(--widget-bg) !important;

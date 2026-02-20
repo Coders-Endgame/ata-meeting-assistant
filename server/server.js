@@ -54,6 +54,80 @@ app.get('/api/config', (req, res) => {
     });
 });
 
+// Models endpoint - proxy to Python summarizer service
+app.get('/api/models', async (req, res) => {
+    try {
+        const response = await fetch('http://localhost:8000/models');
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+            return res.status(response.status).json({ error: errorData.detail || 'Failed to list models' });
+        }
+        const data = await response.json();
+        res.json(data);
+    } catch (error) {
+        console.error('[Models] Error:', error.message);
+        if (error.cause && error.cause.code === 'ECONNREFUSED') {
+            return res.status(503).json({ error: 'Summarizer service is not running.' });
+        }
+        res.status(500).json({ error: 'Failed to list models' });
+    }
+});
+
+// User preferences endpoints
+app.get('/api/preferences/:userId', async (req, res) => {
+    const { userId } = req.params;
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+
+    try {
+        const { data, error } = await supabase
+            .from('user_preferences')
+            .select('preferred_model, updated_at')
+            .eq('user_id', userId)
+            .single();
+
+        if (error && error.code === 'PGRST116') {
+            // No row found – auto-create with SQL DEFAULT
+            const { data: newPref, error: insertError } = await supabase
+                .from('user_preferences')
+                .insert({ user_id: userId })
+                .select('preferred_model, updated_at')
+                .single();
+            if (insertError) throw insertError;
+            return res.json(newPref);
+        }
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        console.error('[Preferences GET] Error:', error.message);
+        res.status(500).json({ error: 'Failed to fetch preferences' });
+    }
+});
+
+app.put('/api/preferences/:userId', async (req, res) => {
+    const { userId } = req.params;
+    const { preferred_model } = req.body;
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    if (!preferred_model) return res.status(400).json({ error: 'preferred_model is required' });
+
+    try {
+        const { data, error } = await supabase
+            .from('user_preferences')
+            .upsert({
+                user_id: userId,
+                preferred_model,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id' })
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        console.error('[Preferences PUT] Error:', error.message);
+        res.status(500).json({ error: 'Failed to update preferences' });
+    }
+});
+
 // Start bot endpoint
 app.post('/api/bot/start', async (req, res) => {
     const { zoomUrl, sessionId } = req.body;
@@ -257,7 +331,7 @@ app.post('/api/transcribe', async (req, res) => {
         const response = await fetch('http://localhost:8000/transcribe', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ session_id: sessionId }),
+            body: JSON.stringify({ session_id: sessionId, model: req.body.model || undefined }),
         });
 
         if (!response.ok) {
@@ -293,7 +367,7 @@ app.post('/api/summarize', async (req, res) => {
         const response = await fetch('http://localhost:8000/summarize', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ session_id: sessionId }),
+            body: JSON.stringify({ session_id: sessionId, model: req.body.model || undefined }),
         });
 
         if (!response.ok) {
@@ -329,7 +403,7 @@ app.post('/api/chat', async (req, res) => {
         const response = await fetch('http://localhost:8000/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ session_id: sessionId, message, history: history || [] }),
+            body: JSON.stringify({ session_id: sessionId, message, history: history || [], model: req.body.model || undefined }),
         });
 
         if (!response.ok) {

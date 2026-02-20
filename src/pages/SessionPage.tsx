@@ -5,6 +5,7 @@ import {
     List,
     ListItem,
     ListItemText,
+    ListItemIcon,
     Avatar,
     Typography,
     Button,
@@ -24,6 +25,8 @@ import {
     AvatarGroup,
     Chip,
     Checkbox,
+    Menu,
+    MenuItem,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
@@ -37,6 +40,9 @@ import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import ChatIcon from '@mui/icons-material/Chat';
 import SendIcon from '@mui/icons-material/Send';
 import CloseIcon from '@mui/icons-material/Close';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import DescriptionIcon from '@mui/icons-material/Description';
+import DataObjectIcon from '@mui/icons-material/DataObject';
 import './SessionPage.css';
 
 interface ChatMessage {
@@ -112,6 +118,10 @@ export default function SessionPage() {
     const [chatInput, setChatInput] = useState('');
     const [chatLoading, setChatLoading] = useState(false);
     const chatMessagesRef = useRef<HTMLDivElement>(null);
+
+    // Export menu states
+    const [transcriptExportAnchor, setTranscriptExportAnchor] = useState<null | HTMLElement>(null);
+    const [summaryExportAnchor, setSummaryExportAnchor] = useState<null | HTMLElement>(null);
 
     // Layout states
     const [leftPanelWidth, setLeftPanelWidth] = useState(50);
@@ -698,6 +708,78 @@ export default function SessionPage() {
         }
     };
 
+    // Export handlers
+    const downloadFile = (content: string, filename: string, mimeType: string) => {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleExportTranscript = (format: 'txt' | 'json') => {
+        setTranscriptExportAnchor(null);
+        if (transcripts.length === 0) return;
+
+        const sessionName = sessionId || 'session';
+
+        if (format === 'txt') {
+            const lines = transcripts.map(t => {
+                const time = t.timestamp_ms != null
+                    ? `[${formatTimestamp(t.timestamp_ms)}]`
+                    : `[${new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}]`;
+                return `${t.speaker || 'Unknown Speaker'} ${time}: ${t.transcript}`;
+            });
+            downloadFile(lines.join('\n'), `transcript_${sessionName}.txt`, 'text/plain');
+        } else {
+            const data = transcripts.map(t => ({
+                speaker: t.speaker || 'Unknown Speaker',
+                transcript: t.transcript,
+                created_at: t.created_at,
+                timestamp_ms: t.timestamp_ms ?? null,
+            }));
+            downloadFile(JSON.stringify(data, null, 2), `transcript_${sessionName}.json`, 'application/json');
+        }
+
+        setSnackbar({ open: true, message: `Transcript exported as ${format.toUpperCase()}.`, severity: 'success' });
+    };
+
+    const handleExportSummary = (format: 'txt' | 'json') => {
+        setSummaryExportAnchor(null);
+        if (!summary) return;
+
+        const sessionName = sessionId || 'session';
+
+        if (format === 'txt') {
+            let content = `Meeting Summary\n${'='.repeat(40)}\n\n${summary}`;
+            if (actionItems.length > 0) {
+                content += `\n\nAction Items\n${'-'.repeat(40)}`;
+                actionItems.forEach((item, idx) => {
+                    const status = item.status === 'done' ? '[✓]' : '[ ]';
+                    const assignee = item.assignee ? ` (Assigned: ${item.assignee})` : '';
+                    content += `\n${status} ${idx + 1}. ${item.description}${assignee}`;
+                });
+            }
+            downloadFile(content, `summary_${sessionName}.txt`, 'text/plain');
+        } else {
+            const data = {
+                summary,
+                action_items: actionItems.map(item => ({
+                    description: item.description,
+                    status: item.status,
+                    assignee: item.assignee ?? null,
+                })),
+            };
+            downloadFile(JSON.stringify(data, null, 2), `summary_${sessionName}.json`, 'application/json');
+        }
+
+        setSnackbar({ open: true, message: `Summary exported as ${format.toUpperCase()}.`, severity: 'success' });
+    };
+
     // Auto-scroll chat when new messages arrive
     useEffect(() => {
         if (chatMessagesRef.current) {
@@ -877,9 +959,22 @@ export default function SessionPage() {
                     sx={{ backgroundColor: 'var(--widget-bg)' }}
                 >
                     <Box p={2.5} height="100%" display="flex" flexDirection="column">
-                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'var(--heading-color)' }}>
-                            Transcript
-                        </Typography>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: 'var(--heading-color)' }}>
+                                Transcript
+                            </Typography>
+                            {transcripts.length > 0 && (
+                                <Tooltip title="Export transcript">
+                                    <IconButton
+                                        size="small"
+                                        className="export-btn"
+                                        onClick={(e) => setTranscriptExportAnchor(e.currentTarget)}
+                                    >
+                                        <FileDownloadIcon sx={{ fontSize: '1.1rem' }} />
+                                    </IconButton>
+                                </Tooltip>
+                            )}
+                        </Box>
                         <Divider sx={{ mb: 2, borderColor: 'var(--border-color)' }} />
                         <div className="scrollable-content" ref={transcriptScrollRef}>
                             {loading ? (
@@ -969,9 +1064,22 @@ export default function SessionPage() {
                     <Box p={2.5} height="100%" display="flex" flexDirection="column">
                         {/* Summary Header with Generate Button or Live/Manual Toggle */}
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                            <Typography variant="h6" sx={{ fontWeight: 600, color: 'var(--heading-color)' }}>
-                                Meeting Summary
-                            </Typography>
+                            <Box display="flex" alignItems="center" gap={1}>
+                                <Typography variant="h6" sx={{ fontWeight: 600, color: 'var(--heading-color)' }}>
+                                    Meeting Summary
+                                </Typography>
+                                {summary && (
+                                    <Tooltip title="Export summary">
+                                        <IconButton
+                                            size="small"
+                                            className="export-btn"
+                                            onClick={(e) => setSummaryExportAnchor(e.currentTarget)}
+                                        >
+                                            <FileDownloadIcon sx={{ fontSize: '1.1rem' }} />
+                                        </IconButton>
+                                    </Tooltip>
+                                )}
+                            </Box>
 
                             {botStatus.status === 'active' ? (
                                 <Box display="flex" alignItems="center" gap={1.5}>
@@ -1119,6 +1227,43 @@ export default function SessionPage() {
                     </Box>
                 </Paper>
             </div>
+
+            {/* Export Menus */}
+            <Menu
+                anchorEl={transcriptExportAnchor}
+                open={Boolean(transcriptExportAnchor)}
+                onClose={() => setTranscriptExportAnchor(null)}
+                className="export-menu"
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            >
+                <MenuItem onClick={() => handleExportTranscript('txt')}>
+                    <ListItemIcon><DescriptionIcon sx={{ fontSize: '1.1rem' }} /></ListItemIcon>
+                    <ListItemText primaryTypographyProps={{ variant: 'body2' }}>Export as TXT</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={() => handleExportTranscript('json')}>
+                    <ListItemIcon><DataObjectIcon sx={{ fontSize: '1.1rem' }} /></ListItemIcon>
+                    <ListItemText primaryTypographyProps={{ variant: 'body2' }}>Export as JSON</ListItemText>
+                </MenuItem>
+            </Menu>
+
+            <Menu
+                anchorEl={summaryExportAnchor}
+                open={Boolean(summaryExportAnchor)}
+                onClose={() => setSummaryExportAnchor(null)}
+                className="export-menu"
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            >
+                <MenuItem onClick={() => handleExportSummary('txt')}>
+                    <ListItemIcon><DescriptionIcon sx={{ fontSize: '1.1rem' }} /></ListItemIcon>
+                    <ListItemText primaryTypographyProps={{ variant: 'body2' }}>Export as TXT</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={() => handleExportSummary('json')}>
+                    <ListItemIcon><DataObjectIcon sx={{ fontSize: '1.1rem' }} /></ListItemIcon>
+                    <ListItemText primaryTypographyProps={{ variant: 'body2' }}>Export as JSON</ListItemText>
+                </MenuItem>
+            </Menu>
 
             <Dialog
                 open={openShareDialog}

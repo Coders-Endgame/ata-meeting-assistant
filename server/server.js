@@ -317,6 +317,42 @@ app.post('/api/summarize', async (req, res) => {
     }
 });
 
+// Chat endpoint - proxy to Python summarizer service
+app.post('/api/chat', async (req, res) => {
+    const { sessionId, message, history } = req.body;
+
+    if (!sessionId || !message) {
+        return res.status(400).json({ error: 'sessionId and message are required' });
+    }
+
+    try {
+        const response = await fetch('http://localhost:8000/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: sessionId, message, history: history || [] }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+            console.error(`[Chat] Error from Python service:`, errorData);
+            return res.status(response.status).json({
+                error: errorData.detail || 'Chat request failed'
+            });
+        }
+
+        const data = await response.json();
+        res.json(data);
+    } catch (error) {
+        console.error('[Chat] Error:', error.message);
+        if (error.cause && error.cause.code === 'ECONNREFUSED') {
+            return res.status(503).json({
+                error: 'Summarizer service is not running. Start it with: cd services/summarizer && uvicorn main:app --reload'
+            });
+        }
+        res.status(500).json({ error: 'Failed to connect to summarizer service' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log(`Health check: http://localhost:${PORT}/health`);

@@ -24,7 +24,6 @@ import {
     AvatarGroup,
     Chip,
     Checkbox,
-    LinearProgress
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
@@ -35,7 +34,15 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
+import ChatIcon from '@mui/icons-material/Chat';
+import SendIcon from '@mui/icons-material/Send';
+import CloseIcon from '@mui/icons-material/Close';
 import './SessionPage.css';
+
+interface ChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+}
 
 interface Participant {
     user_id: string;
@@ -98,6 +105,13 @@ export default function SessionPage() {
         message: '',
         severity: 'info'
     });
+
+    // Chat states
+    const [chatOpen, setChatOpen] = useState(false);
+    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+    const [chatInput, setChatInput] = useState('');
+    const [chatLoading, setChatLoading] = useState(false);
+    const chatMessagesRef = useRef<HTMLDivElement>(null);
 
     // Layout states
     const [leftPanelWidth, setLeftPanelWidth] = useState(50);
@@ -638,6 +652,59 @@ export default function SessionPage() {
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     };
 
+    // Chat handlers
+    const handleSendChat = async () => {
+        if (!chatInput.trim() || !sessionId || chatLoading) return;
+
+        const userMessage: ChatMessage = { role: 'user', content: chatInput.trim() };
+        const updatedMessages = [...chatMessages, userMessage];
+        setChatMessages(updatedMessages);
+        setChatInput('');
+        setChatLoading(true);
+
+        try {
+            const response = await fetch('http://localhost:3001/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sessionId,
+                    message: userMessage.content,
+                    history: chatMessages,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                throw new Error(errorData.error || 'Chat request failed');
+            }
+
+            const data = await response.json();
+            setChatMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+        } catch (error: any) {
+            console.error('Chat error:', error);
+            setChatMessages(prev => [...prev, {
+                role: 'assistant',
+                content: 'Sorry, I couldn\'t process your question. Please try again.'
+            }]);
+        } finally {
+            setChatLoading(false);
+        }
+    };
+
+    const handleChatKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendChat();
+        }
+    };
+
+    // Auto-scroll chat when new messages arrive
+    useEffect(() => {
+        if (chatMessagesRef.current) {
+            chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+        }
+    }, [chatMessages]);
+
     const filteredParticipants = participants.filter(p =>
         p.display_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -1098,6 +1165,101 @@ export default function SessionPage() {
                                 ? 'Initializing bot container...'
                                 : 'Connecting to your meeting...'}
                         </Typography>
+                    </div>
+                </div>
+            )}
+
+            {/* Chat FAB */}
+            <Tooltip title="Ask about this meeting">
+                <button
+                    className={`chat-fab ${chatOpen ? 'hidden' : ''}`}
+                    onClick={() => setChatOpen(true)}
+                    disabled={transcripts.length === 0}
+                >
+                    <ChatIcon />
+                </button>
+            </Tooltip>
+
+            {/* Chat Panel */}
+            {chatOpen && (
+                <div className="chat-panel">
+                    <div className="chat-panel-header">
+                        <div className="chat-panel-title">
+                            <SmartToyIcon sx={{ fontSize: '1.2rem' }} />
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                Ask about this meeting
+                            </Typography>
+                        </div>
+                        <IconButton size="small" onClick={() => setChatOpen(false)} className="chat-close-btn">
+                            <CloseIcon sx={{ fontSize: '1rem' }} />
+                        </IconButton>
+                    </div>
+
+                    <div className="chat-messages" ref={chatMessagesRef}>
+                        {chatMessages.length === 0 && (
+                            <div className="chat-empty">
+                                <SmartToyIcon sx={{ fontSize: 36, color: 'var(--border-color)', mb: 1 }} />
+                                <Typography variant="body2" sx={{ color: 'var(--text-color-secondary)', textAlign: 'center' }}>
+                                    Ask any question about the meeting transcript.
+                                </Typography>
+                                <div className="chat-suggestions">
+                                    {['What were the main topics?', 'Summarize the key decisions', 'Who said what about...?'].map((q) => (
+                                        <button
+                                            key={q}
+                                            className="chat-suggestion-btn"
+                                            onClick={() => { setChatInput(q); }}
+                                        >
+                                            {q}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {chatMessages.map((msg, idx) => (
+                            <div key={idx} className={`chat-message ${msg.role}`}>
+                                {msg.role === 'assistant' && (
+                                    <SmartToyIcon className="chat-avatar" />
+                                )}
+                                <div className="chat-bubble">
+                                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                                        {msg.content}
+                                    </Typography>
+                                </div>
+                            </div>
+                        ))}
+                        {chatLoading && (
+                            <div className="chat-message assistant">
+                                <SmartToyIcon className="chat-avatar" />
+                                <div className="chat-bubble">
+                                    <div className="chat-typing">
+                                        <span></span><span></span><span></span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="chat-input-area">
+                        <TextField
+                            fullWidth
+                            size="small"
+                            placeholder="Ask a question..."
+                            value={chatInput}
+                            onChange={(e) => setChatInput(e.target.value)}
+                            onKeyDown={handleChatKeyDown}
+                            disabled={chatLoading}
+                            className="chat-input"
+                            multiline
+                            maxRows={3}
+                        />
+                        <IconButton
+                            onClick={handleSendChat}
+                            disabled={!chatInput.trim() || chatLoading}
+                            className="chat-send-btn"
+                            size="small"
+                        >
+                            <SendIcon sx={{ fontSize: '1.1rem' }} />
+                        </IconButton>
                     </div>
                 </div>
             )}

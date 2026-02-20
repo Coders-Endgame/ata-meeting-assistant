@@ -22,17 +22,31 @@
   gap: var(--spacing-md);
 }
 
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.topbar-brand:hover .topbar-title {
+  color: var(--primary-color);
+}
+
+.topbar-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: contain;
+}
+
 .topbar-title {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--heading-color);
-  cursor: pointer;
   transition: color 0.2s;
-}
-
-.topbar-title:hover {
-  color: var(--primary-color);
 }
 
 /* User Profile Widget */

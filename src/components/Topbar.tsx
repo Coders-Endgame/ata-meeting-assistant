@@ -142,7 +142,10 @@ export default function Topbar({ session, theme, toggleTheme }: TopbarProps) {
     return (
         <div className="topbar">
             <div className="topbar-left">
-                <h3 className="topbar-title" onClick={() => navigate(user ? '/dashboard' : '/')}>Meeting Assistant</h3>
+                <div className="topbar-brand" onClick={() => navigate(user ? '/dashboard' : '/')}>
+                    <img src="/SummarAIzeLogo.svg" alt="SummarAIze Logo" className="topbar-logo" />
+                    <h3 className="topbar-title">Meeting Assistant</h3>
+                </div>
             </div>
             <div className="topbar-right">
                 <button

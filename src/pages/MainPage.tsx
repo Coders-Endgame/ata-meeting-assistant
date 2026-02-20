@@ -75,12 +75,6 @@ function AudioWaveIllustration() {
                 <rect x="186" y="132" width="6" height="16" rx="3" fill="var(--il-accent3)" opacity="0.5" />
                 <rect x="198" y="130" width="6" height="20" rx="3" fill="var(--il-accent3)" opacity="0.6" />
             </g>
-            {/* AI sparkle */}
-            <g className="il-sparkle">
-                <circle cx="120" cy="50" r="5" fill="var(--il-accent3)" opacity="0.8" />
-                <line x1="120" y1="42" x2="120" y2="58" stroke="var(--il-accent3)" strokeWidth="1.5" strokeLinecap="round" />
-                <line x1="112" y1="50" x2="128" y2="50" stroke="var(--il-accent3)" strokeWidth="1.5" strokeLinecap="round" />
-            </g>
         </svg>
     );
 }

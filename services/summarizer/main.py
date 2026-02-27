@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 SUPABASE_URL = os.getenv("SUPABASE_URL", "http://127.0.0.1:54321")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1")
 WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base")
 
 if not SUPABASE_SERVICE_ROLE_KEY:

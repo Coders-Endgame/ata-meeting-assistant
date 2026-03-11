@@ -2,7 +2,7 @@ services:
   zoom-bot:
     build: .
     env_file:
-      - ../.env
+      - ../../.env
     environment:
       - PYTHONUNBUFFERED=1
     # You can override the command here

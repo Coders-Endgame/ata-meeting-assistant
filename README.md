@@ -10,6 +10,40 @@ This is a React-based meeting assistant application built with Vite and Supabase
 - **Session Management**: Create and join meeting sessions
 - **Audio Upload**: Upload audio files for transcription and summarization
 
+## Project Structure
+
+```
+ata-meeting-assistant/
+├── src/                          # Frontend (React + TypeScript)
+│   ├── components/               #   Reusable UI components
+│   ├── pages/                    #   Page-level components
+│   ├── assets/                   #   Static assets
+│   ├── App.tsx                   #   Root component & routing
+│   └── supabaseClient.ts        #   Supabase client init
+│
+├── services/                     # Backend services
+│   ├── api/                      #   Express.js API gateway (port 3001)
+│   │   ├── server.js             #     API routes & bot orchestration
+│   │   └── package.json          #     Node.js dependencies
+│   ├── bot/                      #   Zoom meeting bot (Docker)
+│   │   ├── bot.py                #     Playwright + Whisper transcription
+│   │   ├── config.json           #     Bot & model configuration
+│   │   ├── Dockerfile            #     Container build
+│   │   ├── docker-compose.yml    #     Container orchestration
+│   │   └── start.sh              #     PulseAudio + bot entrypoint
+│   └── summarizer/               #   AI summarizer (FastAPI, port 8000)
+│       ├── main.py               #     Summarize, transcribe & chat endpoints
+│       └── requirements.txt      #     Python dependencies
+│
+├── supabase/                     # Database configuration
+│   ├── config.toml               #   Supabase local config
+│   └── snippets/                 #   SQL migration snippets
+│
+├── .env                          # Environment variables (not committed)
+├── .env.example                  # Environment variable template
+└── README.md
+```
+
 ## Prerequisites
 
 Before you begin, ensure you have met the following requirements:
@@ -24,6 +58,16 @@ Before you begin, ensure you have met the following requirements:
 
 Follow these steps to get the project up and running on your local machine.
 
+### Quick Start (All-in-One)
+
+After completing the setup steps below once, you can start everything with a single command:
+
+```bash
+./start.sh
+```
+
+This starts Supabase, Ollama, the Summarizer, API server, and Frontend. Press **Ctrl+C** to stop all services.
+
 ### 1. Clone the repository
 
 ```bash
@@ -33,18 +77,18 @@ cd ata-meeting-assistant
 
 ### 2. Install Dependencies
 
-Install the project dependencies using npm:
+Install the frontend dependencies:
 
 ```bash
 npm install
 ```
 
-Also install server dependencies:
+Install API server dependencies:
 
 ```bash
-cd server
+cd services/api
 npm install
-cd ..
+cd ../..
 ```
 
 ### 3. Start Local Supabase (Backend)
@@ -88,9 +132,9 @@ The local Supabase instance should pick up the configuration. If you need to man
 Build the Docker image for the Zoom bot:
 
 ```bash
-cd bot
+cd services/bot
 docker compose build
-cd ..
+cd ../..
 ```
 
 ### 7. Set Up the AI Summarizer Service
@@ -118,7 +162,7 @@ The summarizer service will run at `http://localhost:8000`.
 The API server manages bot instances and proxies summarization requests:
 
 ```bash
-cd server
+cd services/api
 npm start
 ```
 
@@ -147,25 +191,40 @@ The application should now be running at `http://localhost:5173` (or another por
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│                 │     │                 │     │                 │
-│   Frontend      │────▶│  Backend API    │────▶│  Docker Bot     │
-│   (React)       │     │  (Express.js)   │     │  (Python)       │
-│                 │     │                 │     │                 │
-└────────┬────────┘     └────────┬────────┘     └────────┬────────┘
-         │                       │                       │
-         │                       │                       │
-         │               ┌───────┴────────┐              │
-         │               │  Summarizer    │              │
-         │               │  (FastAPI +    │              │
-         │               │   Ollama LLM)  │              │
-         │               └───────┬────────┘              │
-         │                       │                       │
-         ▼                       ▼                       ▼
+│                 │     │   services/api   │     │  services/bot   │
+│   Frontend      │────▶│  (Express.js)    │────▶│  (Python +      │
+│   (React)       │     │  Port 3001       │     │   Docker)       │
+│                 │     │                  │     │                 │
+└────────┬────────┘     └────────┬─────┬──┘     └────────┬────────┘
+         │                       │     │                  │
+         │                       │     │                  │
+         │               ┌───────┘     └───────┐          │
+         │               │                     │          │
+         │               ▼                     │          │
+         │      ┌─────────────────┐            │          │
+         │      │   services/     │            │          │
+         │      │   summarizer    │            │          │
+         │      │  (FastAPI +     │            │          │
+         │      │   Ollama LLM)   │            │          │
+         │      │  Port 8000      │            │          │
+         │      └────────┬────────┘            │          │
+         │               │                     │          │
+         ▼               ▼                     ▼          ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                         Supabase                                │
 │              (PostgreSQL + Realtime Subscriptions)              │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+### Service Boundaries
+
+| Service | Location | Language | Port | Responsibility |
+|---|---|---|---|---|
+| **Frontend** | `src/` | TypeScript (React) | 5173 | UI, real-time subscriptions |
+| **API Gateway** | `services/api/` | JavaScript (Express) | 3001 | Bot orchestration, proxy to summarizer, user preferences |
+| **Zoom Bot** | `services/bot/` | Python (Playwright + Whisper) | — | Join Zoom meetings, capture audio, real-time transcription |
+| **Summarizer** | `services/summarizer/` | Python (FastAPI + Ollama) | 8000 | AI summarization, transcription, chat |
+| **Database** | `supabase/` | SQL (PostgreSQL) | 54321 | Data persistence, auth, real-time |
 
 ## Managing Local Services
 
@@ -192,6 +251,10 @@ npx supabase stop
 | `/api/bot/status/:sessionId` | GET | Check bot status |
 | `/api/bot/list` | GET | List all running bots |
 | `/api/summarize` | POST | Generate AI summary & action items |
+| `/api/transcribe` | POST | Transcribe uploaded audio |
+| `/api/chat` | POST | Chat with transcript context |
+| `/api/models` | GET | List available LLM models |
+| `/api/preferences/:userId` | GET/PUT | User model preferences |
 
 ## Technologies Used
 
@@ -205,4 +268,3 @@ npx supabase stop
 *   [Docker](https://www.docker.com/)
 *   [Playwright](https://playwright.dev/) (for browser automation)
 *   [Faster-Whisper](https://github.com/guillaumekln/faster-whisper) (for speech-to-text)
-

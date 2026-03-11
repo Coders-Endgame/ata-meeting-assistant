@@ -63,6 +63,8 @@ class ZoomBot:
         self.model_size = "small"
         self.device = None
         self.compute_type = None
+        # Read per-session language from env (set by API when starting the bot)
+        self.transcription_language = os.environ.get('TRANSCRIPTION_LANGUAGE')  # e.g. 'en' or 'tr'
 
         try:
             with open("config.json", "r") as f:
@@ -78,6 +80,9 @@ class ZoomBot:
             logging.warning("Config file not found. Using defaults (small model).")
         except Exception as e:
             logging.error(f"Error loading config: {e}")
+
+        if self.transcription_language:
+            logging.info(f"Transcription language fixed to: {self.transcription_language} (Whisper will skip auto-detection)")
 
         # Determine Device and Compute Type
         import torch
@@ -463,16 +468,25 @@ class ZoomBot:
                     if np.max(np.abs(audio_data)) < 0.01:
                         continue
 
-                    segments, info = self.model.transcribe(
-                        audio_data, 
+                    # Build transcribe kwargs – if a specific language is set, pass it
+                    # to skip Whisper's auto-detection step (faster & more accurate)
+                    transcribe_kwargs = dict(
                         beam_size=5,
                         vad_filter=True,
                         vad_parameters=dict(min_silence_duration_ms=500),
                         condition_on_previous_text=False,
-                        no_speech_threshold=0.6
+                        no_speech_threshold=0.6,
+                    )
+                    if self.transcription_language:
+                        transcribe_kwargs['language'] = self.transcription_language
+
+                    segments, info = self.model.transcribe(
+                        audio_data,
+                        **transcribe_kwargs
                     )
                     
-                    if self.allowed_languages and info.language not in self.allowed_languages:
+                    # If no fixed language was set, fall back to the allowed_languages filter
+                    if not self.transcription_language and self.allowed_languages and info.language not in self.allowed_languages:
                         logging.info(f"Detected language '{info.language}' is not allowed. Skipping.")
                         continue
                     

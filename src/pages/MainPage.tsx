@@ -336,10 +336,22 @@ export default function MainPage({ session }: { session: any }) {
             // 3. Start the bot for new sessions
             if (isNewSession) {
                 try {
+                    // Fetch user's preferred transcription language
+                    let transcriptionLanguage = 'en';
+                    try {
+                        const prefRes = await fetch(`http://localhost:3001/api/preferences/${session.user.id}`);
+                        if (prefRes.ok) {
+                            const prefData = await prefRes.json();
+                            transcriptionLanguage = prefData.preferred_language || 'en';
+                        }
+                    } catch (prefErr) {
+                        console.warn('Could not fetch language preference, defaulting to en:', prefErr);
+                    }
+
                     const response = await fetch('http://localhost:3001/api/bot/start', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ zoomUrl, sessionId: sessionIdToJoin })
+                        body: JSON.stringify({ zoomUrl, sessionId: sessionIdToJoin, language: transcriptionLanguage })
                     });
 
                     if (!response.ok) {

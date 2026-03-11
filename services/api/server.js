@@ -1,6 +1,6 @@
 const path = require('path');
-// Load environment variables from parent directory's .env file
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+// Load environment variables from project root's .env file
+require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
 
 const express = require('express');
 const cors = require('cors');
@@ -81,7 +81,7 @@ app.get('/api/preferences/:userId', async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('user_preferences')
-            .select('preferred_model, updated_at')
+            .select('preferred_model, preferred_language, updated_at')
             .eq('user_id', userId)
             .single();
 
@@ -90,7 +90,7 @@ app.get('/api/preferences/:userId', async (req, res) => {
             const { data: newPref, error: insertError } = await supabase
                 .from('user_preferences')
                 .insert({ user_id: userId })
-                .select('preferred_model, updated_at')
+                .select('preferred_model, preferred_language, updated_at')
                 .single();
             if (insertError) throw insertError;
             return res.json(newPref);
@@ -105,18 +105,24 @@ app.get('/api/preferences/:userId', async (req, res) => {
 
 app.put('/api/preferences/:userId', async (req, res) => {
     const { userId } = req.params;
-    const { preferred_model } = req.body;
+    const { preferred_model, preferred_language } = req.body;
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     if (!preferred_model) return res.status(400).json({ error: 'preferred_model is required' });
+
+    // Build the upsert payload
+    const upsertPayload = {
+        user_id: userId,
+        preferred_model,
+        updated_at: new Date().toISOString()
+    };
+    if (preferred_language) {
+        upsertPayload.preferred_language = preferred_language;
+    }
 
     try {
         const { data, error } = await supabase
             .from('user_preferences')
-            .upsert({
-                user_id: userId,
-                preferred_model,
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'user_id' })
+            .upsert(upsertPayload, { onConflict: 'user_id' })
             .select()
             .single();
 
@@ -130,7 +136,7 @@ app.put('/api/preferences/:userId', async (req, res) => {
 
 // Start bot endpoint
 app.post('/api/bot/start', async (req, res) => {
-    const { zoomUrl, sessionId } = req.body;
+    const { zoomUrl, sessionId, language } = req.body;
 
     if (!zoomUrl || !sessionId) {
         return res.status(400).json({ error: 'zoomUrl and sessionId are required' });
@@ -181,6 +187,7 @@ app.post('/api/bot/start', async (req, res) => {
             '-e', `SESSION_ID=${sessionId}`,
             '-e', `SUPABASE_URL=${dockerSupabaseUrl}`,
             '-e', `SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}`,
+            '-e', `TRANSCRIPTION_LANGUAGE=${language || 'en'}`,    
             'zoom-bot',
             '--url', zoomUrl,
             '--session-id', sessionId,

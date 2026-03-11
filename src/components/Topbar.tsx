@@ -44,6 +44,7 @@ export default function Topbar({ session, theme, toggleTheme }: TopbarProps) {
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [availableModels, setAvailableModels] = useState<string[]>([]);
     const [selectedModel, setSelectedModel] = useState('');
+    const [selectedLanguage, setSelectedLanguage] = useState('en');
     const [settingsLoading, setSettingsLoading] = useState(false);
     const [settingsMessage, setSettingsMessage] = useState('');
 
@@ -166,6 +167,7 @@ export default function Topbar({ session, theme, toggleTheme }: TopbarProps) {
                 if (prefRes.ok) {
                     const prefData = await prefRes.json();
                     setSelectedModel(prefData.preferred_model || '');
+                    setSelectedLanguage(prefData.preferred_language || 'en');
                 }
             }
         } catch (err: any) {
@@ -188,7 +190,7 @@ export default function Topbar({ session, theme, toggleTheme }: TopbarProps) {
             const res = await fetch(`http://localhost:3001/api/preferences/${userId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ preferred_model: selectedModel }),
+                body: JSON.stringify({ preferred_model: selectedModel, preferred_language: selectedLanguage }),
             });
 
             if (!res.ok) {
@@ -343,19 +345,37 @@ export default function Topbar({ session, theme, toggleTheme }: TopbarProps) {
                                         </Typography>
                                     </div>
                                 ) : (
-                                    <FormControl fullWidth variant="outlined" className="settings-select">
-                                        <InputLabel id="model-select-label">Preferred Model</InputLabel>
-                                        <Select
-                                            labelId="model-select-label"
-                                            value={selectedModel}
-                                            onChange={(e) => setSelectedModel(e.target.value)}
-                                            label="Preferred Model"
-                                        >
-                                            {availableModels.map((model) => (
-                                                <MenuItem key={model} value={model}>{model}</MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
+                                    <>
+                                        <FormControl fullWidth variant="outlined" className="settings-select">
+                                            <InputLabel id="model-select-label">Preferred Model</InputLabel>
+                                            <Select
+                                                labelId="model-select-label"
+                                                value={selectedModel}
+                                                onChange={(e) => setSelectedModel(e.target.value)}
+                                                label="Preferred Model"
+                                            >
+                                                {availableModels.map((model) => (
+                                                    <MenuItem key={model} value={model}>{model}</MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+
+                                        <Typography variant="subtitle2" sx={{ color: 'var(--text-color-secondary)', mt: 3, mb: 1 }}>
+                                            Choose the transcription language for live Zoom meetings. Selecting a specific language lets Whisper skip auto-detection and run faster.
+                                        </Typography>
+                                        <FormControl fullWidth variant="outlined" className="settings-select">
+                                            <InputLabel id="language-select-label">Transcription Language</InputLabel>
+                                            <Select
+                                                labelId="language-select-label"
+                                                value={selectedLanguage}
+                                                onChange={(e) => setSelectedLanguage(e.target.value)}
+                                                label="Transcription Language"
+                                            >
+                                                <MenuItem value="en">English</MenuItem>
+                                                <MenuItem value="tr">Türkçe</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </>
                                 )}
 
                                 {settingsMessage && (

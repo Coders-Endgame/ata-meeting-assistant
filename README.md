@@ -50,7 +50,7 @@ Before you begin, ensure you have met the following requirements:
 
 *   **Node.js**: You need to have Node.js installed on your machine.
 *   **npm**: This project uses npm for package management.
-*   **Docker Desktop**: You need Docker Desktop installed and running for both Supabase and the Zoom bot.
+*   **Docker Desktop**: You need Docker Desktop installed and running for the Zoom bot.
 *   **Python 3.9+**: Required for the AI summarizer service.
 *   **Ollama**: Local LLM runtime for AI-powered summaries. Install from [ollama.ai](https://ollama.ai) or `brew install ollama`.
 
@@ -66,7 +66,7 @@ After completing the setup steps below once, you can start everything with a sin
 ./start.sh
 ```
 
-This starts Supabase, Ollama, the Summarizer, API server, and Frontend. Press **Ctrl+C** to stop all services.
+This starts Ollama, the Summarizer, API server, and Frontend. Press **Ctrl+C** to stop all services.
 
 ### 1. Clone the repository
 
@@ -91,32 +91,25 @@ npm install
 cd ../..
 ```
 
-### 3. Start Local Supabase (Backend)
+### 3. Set Up Supabase (Cloud)
 
-We use the Supabase CLI to run the entire backend stack locally using Docker.
+This project uses Supabase's free-tier cloud hosting for the database, auth, and storage.
 
-**Start the Supabase services:**
-```bash
-npx supabase start
-```
-
-This command will download the necessary Docker images and start the Supabase containers. Once complete, it will output your local API URL, Anon Key, and Service Role Key.
-
-**Access the Supabase Studio (Dashboard):**
-You can manage your local database and view tables at:
-[http://localhost:54323](http://localhost:54323)
+1. Create a free project at [supabase.com](https://supabase.com)
+2. Go to **Settings > API** in the Supabase Dashboard and note your **Project URL**, **anon key**, and **service_role key**
+3. Go to the **SQL Editor** in the Dashboard and run each SQL file from the `supabase/snippets/` directory to create the required tables, storage buckets, and policies
 
 ### 4. Configure Environment Variables
 
-Create a file named `.env` in the root directory of the project. Use the output from the `npx supabase start` command to fill in the values.
+Create a file named `.env` in the root directory. Use the values from your Supabase Dashboard:
 
 ```env
-VITE_SUPABASE_URL=http://127.0.0.1:54321
-VITE_SUPABASE_ANON_KEY=your_local_anon_key_from_CLI_output
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_from_CLI_output
+VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key_from_dashboard
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_from_dashboard
 
 # For backend server and bot
-SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_URL=https://<your-project-ref>.supabase.co
 
 # For summarizer service (Ollama)
 OLLAMA_HOST=http://localhost:11434
@@ -125,7 +118,7 @@ OLLAMA_MODEL=llama3.1
 
 ### 5. Database Setup
 
-The local Supabase instance should pick up the configuration. If you need to manually apply the schema, you can run the SQL script located in `table.sql` inside the SQL Editor of your local Supabase Studio running at [http://localhost:54323](http://localhost:54323).
+Run the SQL snippets from `supabase/snippets/` in the **SQL Editor** of your Supabase Dashboard to create the required tables and storage buckets.
 
 ### 6. Build the Zoom Bot Docker Image
 
@@ -224,15 +217,7 @@ The application should now be running at `http://localhost:5173` (or another por
 | **API Gateway** | `services/api/` | JavaScript (Express) | 3001 | Bot orchestration, proxy to summarizer, user preferences |
 | **Zoom Bot** | `services/bot/` | Python (Playwright + Whisper) | — | Join Zoom meetings, capture audio, real-time transcription |
 | **Summarizer** | `services/summarizer/` | Python (FastAPI + Ollama) | 8000 | AI summarization, transcription, chat |
-| **Database** | `supabase/` | SQL (PostgreSQL) | 54321 | Data persistence, auth, real-time |
-
-## Managing Local Services
-
-**Stop Supabase:**
-When you are done working, you can stop the local Docker containers to free up resources:
-```bash
-npx supabase stop
-```
+| **Database** | `supabase/` | SQL (PostgreSQL) | — | Data persistence, auth, real-time (cloud) |
 
 ## Scripts
 

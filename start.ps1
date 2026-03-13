@@ -26,9 +26,6 @@ function Cleanup {
         } catch {}
     }
 
-    Log "Stopping Supabase..."
-    try { npx supabase stop 2>$null } catch {}
-
     Ok "All services stopped. Goodbye!"
 }
 
@@ -59,13 +56,7 @@ if (!(Test-Path "$ROOT_DIR\.env")) {
     exit 1
 }
 
-# ─── 1. Supabase ─────────────────────────────────────────────
-Log "Starting Supabase..."
-npx supabase start
-if ($LASTEXITCODE -ne 0) { Err "Supabase failed to start."; exit 1 }
-Ok "Supabase is running."
-
-# ─── 2. Ollama ───────────────────────────────────────────────
+# ─── 1. Ollama ───────────────────────────────────────────────
 if (Get-Command ollama -ErrorAction SilentlyContinue) {
     try {
         $null = Invoke-WebRequest -Uri "http://localhost:11434/api/tags" -TimeoutSec 2 -ErrorAction Stop
@@ -81,7 +72,7 @@ if (Get-Command ollama -ErrorAction SilentlyContinue) {
     Warn "Ollama not found — summarizer will not work without it."
 }
 
-# ─── 3. Summarizer service (FastAPI) ─────────────────────────
+# ─── 2. Summarizer service (FastAPI) ─────────────────────────
 Log "Starting Summarizer service..."
 $summarizerProc = Start-Process -FilePath $PYTHON_CMD `
     -ArgumentList "-m uvicorn main:app --reload --port 8000" `
@@ -90,7 +81,7 @@ $summarizerProc = Start-Process -FilePath $PYTHON_CMD `
 $script:Processes += $summarizerProc
 Ok "Summarizer starting on http://localhost:8000 (PID $($summarizerProc.Id))"
 
-# ─── 4. API server (Express) ─────────────────────────────────
+# ─── 3. API server (Express) ─────────────────────────────────
 Log "Starting API server..."
 $apiProc = Start-Process -FilePath "node" `
     -ArgumentList "server.js" `
@@ -99,7 +90,7 @@ $apiProc = Start-Process -FilePath "node" `
 $script:Processes += $apiProc
 Ok "API server starting on http://localhost:3001 (PID $($apiProc.Id))"
 
-# ─── 5. Frontend (Vite) ──────────────────────────────────────
+# ─── 4. Frontend (Vite) ──────────────────────────────────────
 Log "Starting Frontend dev server..."
 $frontendProc = Start-Process -FilePath "npx" `
     -ArgumentList "vite --host" `
@@ -118,7 +109,6 @@ Write-Host ""
 Write-Host "  Frontend:     " -NoNewline; Write-Host "http://localhost:5173" -ForegroundColor Cyan
 Write-Host "  API Server:   " -NoNewline; Write-Host "http://localhost:3001" -ForegroundColor Cyan
 Write-Host "  Summarizer:   " -NoNewline; Write-Host "http://localhost:8000" -ForegroundColor Cyan
-Write-Host "  Supabase:     " -NoNewline; Write-Host "http://localhost:54323" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Press " -NoNewline; Write-Host "Ctrl+C" -ForegroundColor Yellow -NoNewline; Write-Host " to stop all services."
 Write-Host ""

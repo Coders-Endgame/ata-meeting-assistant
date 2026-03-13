@@ -41,9 +41,6 @@ cleanup() {
         fi
     done
 
-    log "Stopping Supabase..."
-    npx supabase stop 2>/dev/null || true
-
     ok "All services stopped. Goodbye!"
     exit 0
 }
@@ -76,12 +73,7 @@ if [ ! -f "$ROOT_DIR/.env" ]; then
     exit 1
 fi
 
-# ─── 1. Supabase ─────────────────────────────────────────────
-log "Starting Supabase..."
-npx supabase start
-ok "Supabase is running."
-
-# ─── 2. Ollama ───────────────────────────────────────────────
+# ─── 1. Ollama ───────────────────────────────────────────────
 if command -v ollama &>/dev/null; then
     if ! curl -s http://localhost:11434/api/tags &>/dev/null; then
         log "Starting Ollama..."
@@ -96,7 +88,7 @@ else
     warn "Ollama not found — summarizer will not work without it."
 fi
 
-# ─── 3. Summarizer service (FastAPI) ─────────────────────────
+# ─── 2. Summarizer service (FastAPI) ─────────────────────────
 log "Starting Summarizer service..."
 (
     cd "$ROOT_DIR/services/summarizer"
@@ -105,7 +97,7 @@ log "Starting Summarizer service..."
 PIDS+=($!)
 ok "Summarizer starting on http://localhost:8000 (PID ${PIDS[-1]})"
 
-# ─── 4. API server (Express) ─────────────────────────────────
+# ─── 3. API server (Express) ─────────────────────────────────
 log "Starting API server..."
 (
     cd "$ROOT_DIR/services/api"
@@ -114,7 +106,7 @@ log "Starting API server..."
 PIDS+=($!)
 ok "API server starting on http://localhost:3001 (PID ${PIDS[-1]})"
 
-# ─── 5. Frontend (Vite) ──────────────────────────────────────
+# ─── 4. Frontend (Vite) ──────────────────────────────────────
 log "Starting Frontend dev server..."
 (
     cd "$ROOT_DIR"
@@ -133,7 +125,6 @@ echo ""
 echo -e "  Frontend:     ${CYAN}http://localhost:5173${NC}"
 echo -e "  API Server:   ${CYAN}http://localhost:3001${NC}"
 echo -e "  Summarizer:   ${CYAN}http://localhost:8000${NC}"
-echo -e "  Supabase:     ${CYAN}http://localhost:54323${NC}"
 echo ""
 echo -e "  Press ${YELLOW}Ctrl+C${NC} to stop all services."
 echo ""

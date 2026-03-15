@@ -890,6 +890,18 @@ export default function SessionPage() {
                         </div>
                     )}
 
+                    {/* Post-meeting summarization status for Zoom bot sessions */}
+                    {sourceType === 'Zoom' && !botStatus.running && processingStatus && processingStatus !== 'completed' && (
+                        <div className="toolbar-bot-status">
+                            <AutoAwesomeIcon className="bot-icon" />
+                            <div className={`bot-status-badge ${processingStatus === 'failed' ? 'inactive' : 'preparing'}`}>
+                                <span className="bot-status-dot"></span>
+                                {processingStatus === 'summarizing' && 'Summarizing...'}
+                                {processingStatus === 'failed' && 'Summary Failed'}
+                            </div>
+                        </div>
+                    )}
+
                 </div>
             </div>
 
@@ -1152,6 +1164,13 @@ export default function SessionPage() {
                                         <Typography variant="body1" className="summary-text">
                                             {summary}
                                         </Typography>
+                                    ) : processingStatus === 'summarizing' ? (
+                                        <Box className="empty-state" sx={{ minHeight: '100px !important' }}>
+                                            <CircularProgress size={32} sx={{ mb: 1.5 }} />
+                                            <Typography variant="body2" className="no-summary-text">
+                                                Generating meeting summary…
+                                            </Typography>
+                                        </Box>
                                     ) : (
                                         <Box className="empty-state" sx={{ minHeight: '100px !important' }}>
                                             <AutoAwesomeIcon sx={{ fontSize: 40, color: 'var(--border-color)', mb: 1 }} />

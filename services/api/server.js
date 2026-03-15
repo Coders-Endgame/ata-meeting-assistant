@@ -17,6 +17,7 @@ app.use(express.json());
 // Environment variables
 const SUPABASE_URL = process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUMMARIZER_URL = process.env.SUMMARIZER_URL || 'http://localhost:8000';
 
 if (!SUPABASE_SERVICE_ROLE_KEY) {
     console.warn('WARNING: SUPABASE_SERVICE_ROLE_KEY not set. Database operations will fail.');
@@ -57,7 +58,7 @@ app.get('/api/config', (req, res) => {
 // Models endpoint - proxy to Python summarizer service
 app.get('/api/models', async (req, res) => {
     try {
-        const response = await fetch('http://localhost:8000/models');
+        const response = await fetch(`${SUMMARIZER_URL}/models`);
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
             return res.status(response.status).json({ error: errorData.detail || 'Failed to list models' });
@@ -228,6 +229,61 @@ app.post('/api/bot/start', async (req, res) => {
                     .update({ terminated_at: new Date().toISOString() })
                     .eq('id', botInfo.botId);
             }
+
+            // Auto-summarize after the meeting ends if transcripts exist
+            if (supabase) {
+                try {
+                    const { count } = await supabase
+                        .from('transcripts')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('session_id', sessionId);
+
+                    if (count && count > 0) {
+                        console.log(`[Bot ${sessionId}] Meeting ended with ${count} transcript(s). Triggering final summarization...`);
+
+                        await supabase
+                            .from('sessions')
+                            .update({ processing_status: 'summarizing' })
+                            .eq('id', sessionId);
+
+                        try {
+                            const summaryResponse = await fetch(`${SUMMARIZER_URL}/summarize`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ session_id: sessionId }),
+                            });
+
+                            if (summaryResponse.ok) {
+                                console.log(`[Bot ${sessionId}] Final summarization complete.`);
+                                await supabase
+                                    .from('sessions')
+                                    .update({ processing_status: 'completed' })
+                                    .eq('id', sessionId);
+                            } else {
+                                const err = await summaryResponse.json().catch((parseErr) => {
+                                    console.error(`[Bot ${sessionId}] Unable to parse summarizer error response:`, parseErr.message);
+                                    return { detail: `HTTP ${summaryResponse.status}` };
+                                });
+                                console.error(`[Bot ${sessionId}] Summarization service error:`, err.detail);
+                                await supabase
+                                    .from('sessions')
+                                    .update({ processing_status: 'failed' })
+                                    .eq('id', sessionId);
+                            }
+                        } catch (fetchErr) {
+                            console.error(`[Bot ${sessionId}] Could not reach summarizer service:`, fetchErr.message);
+                            await supabase
+                                .from('sessions')
+                                .update({ processing_status: 'failed' })
+                                .eq('id', sessionId);
+                        }
+                    } else {
+                        console.log(`[Bot ${sessionId}] No transcripts found; skipping auto-summarization.`);
+                    }
+                } catch (dbErr) {
+                    console.error(`[Bot ${sessionId}] Error during auto-summarization check:`, dbErr.message);
+                }
+            }
         });
 
         dockerProcess.on('error', (err) => {
@@ -335,7 +391,7 @@ app.post('/api/transcribe', async (req, res) => {
     }
 
     try {
-        const response = await fetch('http://localhost:8000/transcribe', {
+        const response = await fetch(`${SUMMARIZER_URL}/transcribe`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ session_id: sessionId, model: req.body.model || undefined }),
@@ -371,7 +427,7 @@ app.post('/api/summarize', async (req, res) => {
     }
 
     try {
-        const response = await fetch('http://localhost:8000/summarize', {
+        const response = await fetch(`${SUMMARIZER_URL}/summarize`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ session_id: sessionId, model: req.body.model || undefined }),
@@ -407,7 +463,7 @@ app.post('/api/chat', async (req, res) => {
     }
 
     try {
-        const response = await fetch('http://localhost:8000/chat', {
+        const response = await fetch(`${SUMMARIZER_URL}/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ session_id: sessionId, message, history: history || [], model: req.body.model || undefined }),

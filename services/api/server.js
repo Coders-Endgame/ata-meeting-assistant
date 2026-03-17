@@ -15,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 // Environment variables
-const SUPABASE_URL = process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
+const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_SERVICE_ROLE_KEY) {
@@ -168,15 +168,6 @@ app.post('/api/bot/start', async (req, res) => {
         // Path to bot directory
         const botDir = path.join(__dirname, '..', 'bot');
 
-        // Convert localhost to host.docker.internal for Docker container access
-        let dockerSupabaseUrl = SUPABASE_URL;
-        if (dockerSupabaseUrl.includes('127.0.0.1') || dockerSupabaseUrl.includes('localhost')) {
-            dockerSupabaseUrl = dockerSupabaseUrl
-                .replace('127.0.0.1', 'host.docker.internal')
-                .replace('localhost', 'host.docker.internal');
-            console.log(`Using Docker-compatible URL: ${dockerSupabaseUrl}`);
-        }
-
         // Start docker compose with environment variables
         // Note: --add-host is only needed on Linux; Windows/macOS Docker Desktop has host.docker.internal built-in
         const dockerProcess = spawn('docker', [
@@ -185,9 +176,9 @@ app.post('/api/bot/start', async (req, res) => {
             '--rm',
             '-e', `ZOOM_URL=${zoomUrl}`,
             '-e', `SESSION_ID=${sessionId}`,
-            '-e', `SUPABASE_URL=${dockerSupabaseUrl}`,
+            '-e', `SUPABASE_URL=${SUPABASE_URL}`,
             '-e', `SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}`,
-            '-e', `TRANSCRIPTION_LANGUAGE=${language || 'en'}`,    
+            '-e', `TRANSCRIPTION_LANGUAGE=${language || 'en'}`,
             'zoom-bot',
             '--url', zoomUrl,
             '--session-id', sessionId,

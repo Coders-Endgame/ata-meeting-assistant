@@ -3,6 +3,6 @@
         "en",
         "tr"
     ],
-    "model_size": "medium",
+    "model_size": "small",
     "live_summary_interval_sec": 15
 }

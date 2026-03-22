@@ -39,6 +39,5 @@ COPY start.sh .
 RUN dos2unix start.sh
 RUN chmod +x start.sh
 
-RUN python -c "from faster_whisper import WhisperModel; WhisperModel('small', device='cpu', compute_type='int8')"
 # Entrypoint
 ENTRYPOINT ["./start.sh"]

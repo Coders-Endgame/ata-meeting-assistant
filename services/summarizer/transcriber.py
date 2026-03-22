@@ -62,8 +62,8 @@ async def _transcribe_and_summarize(session_id: str, model: Optional[str] = None
 
         try:
             logger.info(f"Running Whisper transcription on {tmp_path}")
-            model = get_whisper_model()
-            result = model.transcribe(tmp_path)
+            whisper_model = get_whisper_model()
+            result = whisper_model.transcribe(tmp_path)
         finally:
             os.unlink(tmp_path)
 

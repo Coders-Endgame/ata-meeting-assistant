@@ -5,7 +5,9 @@
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
-        "dev": "node server.js"
+        "dev": "node server.js",
+        "test:http": "node ../../tests/integration/api.test.mjs",
+        "test:load": "node ../../tests/integration/load.test.mjs"
     },
     "dependencies": {
         "@supabase/supabase-js": "^2.93.3",

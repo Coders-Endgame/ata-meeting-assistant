@@ -25,6 +25,25 @@ Return ONLY valid JSON, no markdown fences, no extra text. Example format:
 {"summary": "The team discussed...", "action_items": [{"description": "Task description here", "assignee": null}]}"""
 
 
+def parse_summary_response(raw: str) -> dict:
+    """Parse Ollama JSON output, allowing a JSON object embedded in plain text."""
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        import re
+
+        json_match = re.search(r"\{.*\}", raw, re.DOTALL)
+        if not json_match:
+            raise HTTPException(status_code=500, detail="LLM did not return valid JSON.")
+
+        try:
+            return json.loads(json_match.group())
+        except json.JSONDecodeError as error:
+            raise HTTPException(
+                status_code=500, detail="Failed to parse LLM response as JSON."
+            ) from error
+
+
 async def _run_summarization(session_id: str, model: Optional[str] = None) -> dict:
     """Internal summarization logic, reusable by both /summarize and /transcribe."""
     # 1. Fetch transcripts from Supabase
@@ -78,25 +97,7 @@ async def _run_summarization(session_id: str, model: Optional[str] = None) -> di
     # 4. Parse Ollama response
     raw = ollama_response.json().get("response", "")
     logger.info(f"Ollama raw response: {raw[:500]}")
-
-    try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError:
-        # Try to extract JSON from the response
-        import re
-
-        json_match = re.search(r"\{.*\}", raw, re.DOTALL)
-        if json_match:
-            try:
-                parsed = json.loads(json_match.group())
-            except json.JSONDecodeError:
-                raise HTTPException(
-                    status_code=500, detail="Failed to parse LLM response as JSON."
-                )
-        else:
-            raise HTTPException(
-                status_code=500, detail="LLM did not return valid JSON."
-            )
+    parsed = parse_summary_response(raw)
 
     summary_text = parsed.get("summary", "")
     action_items_raw = parsed.get("action_items", [])

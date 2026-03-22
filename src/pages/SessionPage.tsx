@@ -839,7 +839,12 @@ export default function SessionPage() {
                             ))}
                         </AvatarGroup>
                         <Tooltip title="Share session">
-                            <IconButton size="small" onClick={() => setOpenShareDialog(true)} className="share-button">
+                            <IconButton
+                                size="small"
+                                onClick={() => setOpenShareDialog(true)}
+                                className="share-button"
+                                aria-label="Share session"
+                            >
                                 <PersonAddIcon sx={{ fontSize: '1.1rem' }} />
                             </IconButton>
                         </Tooltip>
@@ -969,6 +974,7 @@ export default function SessionPage() {
                                         size="small"
                                         className="export-btn"
                                         onClick={(e) => setTranscriptExportAnchor(e.currentTarget)}
+                                        aria-label="Export transcript"
                                     >
                                         <FileDownloadIcon sx={{ fontSize: '1.1rem' }} />
                                     </IconButton>
@@ -1074,6 +1080,7 @@ export default function SessionPage() {
                                             size="small"
                                             className="export-btn"
                                             onClick={(e) => setSummaryExportAnchor(e.currentTarget)}
+                                            aria-label="Export summary"
                                         >
                                             <FileDownloadIcon sx={{ fontSize: '1.1rem' }} />
                                         </IconButton>
@@ -1320,6 +1327,7 @@ export default function SessionPage() {
                     className={`chat-fab ${chatOpen ? 'hidden' : ''}`}
                     onClick={() => setChatOpen(true)}
                     disabled={transcripts.length === 0}
+                    aria-label="Ask about this meeting"
                 >
                     <ChatIcon />
                 </button>

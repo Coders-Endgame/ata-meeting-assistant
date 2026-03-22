@@ -7,7 +7,14 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:stack:check": "node tests/helpers/preflight.mjs",
+    "test:e2e:browser-check": "PLAYWRIGHT_BROWSERS_PATH=/tmp/ms-playwright node tests/helpers/playwright-preflight.mjs",
+    "test:integration": "node tests/helpers/preflight.mjs integration && node --test --test-concurrency=1 tests/integration/api.test.mjs",
+    "test:load": "node tests/helpers/preflight.mjs integration && node --test --test-concurrency=1 tests/integration/load.test.mjs",
+    "test:e2e": "PLAYWRIGHT_BROWSERS_PATH=/tmp/ms-playwright node tests/helpers/preflight.mjs e2e && npm run test:e2e:browser-check && PLAYWRIGHT_BROWSERS_PATH=/tmp/ms-playwright playwright test",
+    "test:python": "python3 -m pytest services/summarizer/tests",
+    "test": "npm run test:integration && npm run test:e2e && npm run test:python"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -23,6 +30,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.58.2",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",

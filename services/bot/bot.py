@@ -117,13 +117,12 @@ class ZoomBot:
         try:
             self.model = WhisperModel(
                 self.model_size, device=self.device, compute_type=self.compute_type
-            )
+            )  # first its checking the cache
         except Exception as e:
             logging.error(
                 f"Failed to load model on {self.device}, falling back to cpu/small: {e}"
             )
             self.model = WhisperModel("small", device="cpu", compute_type="int8")
-
         logging.info("Whisper Model Loaded.")
 
     def report_status(self, status):

@@ -40,9 +40,15 @@ if (!(Get-Command node -ErrorAction SilentlyContinue)) {
     Err "Node.js is not installed."; exit 1
 }
 
-if (!(Get-Command python -ErrorAction SilentlyContinue) -and !(Get-Command python3 -ErrorAction SilentlyContinue)) {
-    Err "Python is not installed."; exit 1
+# Detect Python (Windows usually has 'python', not 'python3')
+if (Get-Command python -ErrorAction SilentlyContinue) {
+    $PYTHON_CMD = "python"
+} elseif (Get-Command python3 -ErrorAction SilentlyContinue) {
+    $PYTHON_CMD = "python3"
+} else {
+    Err "Python not found"; exit 1
 }
+Ok "Using Python command: $PYTHON_CMD"
 
 if (!(Get-Command docker -ErrorAction SilentlyContinue)) {
     Warn "Docker is not installed — Zoom bot will not be available."
@@ -92,8 +98,8 @@ Ok "API server starting on http://localhost:3001 (PID $($apiProc.Id))"
 
 # ─── 4. Frontend (Vite) ──────────────────────────────────────
 Log "Starting Frontend dev server..."
-$frontendProc = Start-Process -FilePath "npx" `
-    -ArgumentList "vite --host" `
+$frontendProc = Start-Process -FilePath "cmd.exe" `
+    -ArgumentList "/c npx vite --host" `
     -WorkingDirectory "$ROOT_DIR" `
     -PassThru -NoNewWindow
 $script:Processes += $frontendProc

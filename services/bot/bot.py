@@ -472,75 +472,189 @@ class ZoomBot:
             except Exception as e:
                 logging.error(f"Error writing transcript to database: {e}")
 
-    # ... (Audio logic needs Linux adaptation) ...
     def run_audio_sync(self):
-        # Sync version of process_audio
+        """
+        Live audio transcription with low latency.
+        Uses periodic transcription during continuous speech to reduce delay.
+        Transcription runs in background threads to not block audio capture.
+        """
         SAMPLE_RATE = 16000
-        CHUNK_DURATION = 3  # seconds
-
-        logging.info("Starting Audio Loopback Capture (Sync)...")
+        FRAME_DURATION = 0.1  # 100ms chunks for processing
+        FRAME_SAMPLES = int(SAMPLE_RATE * FRAME_DURATION)
+        
+        # Silence detection thresholds
+        SPEECH_THRESHOLD = 0.01  # Amplitude threshold to detect speech
+        PAUSE_THRESHOLD = 0.3    # Silence threshold to trigger transcription (seconds)
+        PERIODIC_TRANSCRIPTION_INTERVAL = 5.0  # Transcribe every 5s during continuous speech
+        MAX_UTTERANCE_DURATION = 10  # Hard limit for utterance length
+        
+        logging.info("Starting Audio Loopback Capture (Live Mode)...")
+        logging.info(f"Settings: pause_threshold={PAUSE_THRESHOLD}s, periodic_interval={PERIODIC_TRANSCRIPTION_INTERVAL}s")
+        
+        # Thread pool for background transcription
+        from concurrent.futures import ThreadPoolExecutor
+        executor = ThreadPoolExecutor(max_workers=2)
+        pending_futures = []
+        
         try:
-            # On Linux with PulseAudio (Docker), default_microphone should be the monitor of our virtual sink
-            # On Windows, we need include_loopback=True on default_speaker.
-
             import platform
 
             is_linux = platform.system() == "Linux"
 
             if is_linux:
-                # Docker/Linux
                 mic = sc.default_microphone()
                 logging.info(f"Using microphone: {mic.name}")
             else:
-                # Windows
                 default_speaker = sc.default_speaker()
                 mic = sc.get_microphone(
                     id=str(default_speaker.name), include_loopback=True
                 )
                 logging.info(f"Using loopback of speaker: {default_speaker.name}")
 
+            # State variables
+            buffer = []  # Current audio buffer
+            silence_dur = 0.0
+            speech_dur = 0.0
+            time_since_last_transcription = 0.0
+            is_speaking = False
+            chunk_num = 0
+            
+            def submit_transcription(audio_buffer, is_partial=False):
+                """Submit buffer for background transcription."""
+                nonlocal chunk_num
+                if not audio_buffer:
+                    return
+                chunk_num += 1
+                # Make a copy of the buffer data
+                audio_copy = [f.copy() for f in audio_buffer]
+                future = executor.submit(self._transcribe_buffer, audio_copy, chunk_num, is_partial)
+                pending_futures.append(future)
+            
+            def cleanup_completed_futures():
+                """Remove completed futures from the list."""
+                nonlocal pending_futures
+                pending_futures = [f for f in pending_futures if not f.done()]
+
             with mic.recorder(samplerate=SAMPLE_RATE) as recorder:
+                logging.info("Audio recorder started, listening for speech...")
+                
                 while self.is_running:
-                    data = recorder.record(numframes=SAMPLE_RATE * CHUNK_DURATION)
-                    audio_data = data.mean(axis=1).astype(np.float32)
-
-                    if np.max(np.abs(audio_data)) < 0.01:
-                        continue
-
-                    # Build transcribe kwargs – if a specific language is set, pass it
-                    # to skip Whisper's auto-detection step (faster & more accurate)
-                    transcribe_kwargs = dict(
-                        beam_size=5,
-                        vad_filter=True,
-                        vad_parameters=dict(min_silence_duration_ms=500),
-                        condition_on_previous_text=False,
-                        no_speech_threshold=0.6,
-                    )
-                    if self.transcription_language:
-                        transcribe_kwargs["language"] = self.transcription_language
-
-                    segments, info = self.model.transcribe(
-                        audio_data, **transcribe_kwargs
-                    )
-
-                    # If no fixed language was set, fall back to the allowed_languages filter
-                    if (
-                        not self.transcription_language
-                        and self.allowed_languages
-                        and info.language not in self.allowed_languages
-                    ):
-                        logging.info(
-                            f"Detected language '{info.language}' is not allowed. Skipping."
-                        )
-                        continue
-
-                    for segment in segments:
-                        txt = segment.text.strip()
-                        if len(txt) > 0:
-                            self.write_transcript(txt)
+                    # Record small frame (100ms)
+                    frame = recorder.record(numframes=FRAME_SAMPLES)
+                    frame_mono = frame.mean(axis=1).astype(np.float32)
+                    
+                    # Cleanup completed transcription tasks
+                    cleanup_completed_futures()
+                    
+                    max_amp = np.max(np.abs(frame_mono))
+                    is_speech = max_amp >= SPEECH_THRESHOLD
+                    
+                    if is_speech:
+                        if not is_speaking:
+                            logging.info("🟢 Speech detected, accumulating audio...")
+                            is_speaking = True
+                        
+                        silence_dur = 0.0
+                        speech_dur += FRAME_DURATION
+                        time_since_last_transcription += FRAME_DURATION
+                        buffer.append(frame_mono.copy())
+                        
+                        # Check for periodic transcription (during continuous speech)
+                        if time_since_last_transcription >= PERIODIC_TRANSCRIPTION_INTERVAL:
+                            if len(buffer) > 50:  # At least 5 seconds of audio
+                                logging.info(f"📝 Periodic transcription after {speech_dur:.1f}s of speech...")
+                                submit_transcription(buffer, is_partial=True)
+                                time_since_last_transcription = 0.0
+                                # Keep last 1 second for context (overlap)
+                                overlap_frames = int(1.0 / FRAME_DURATION)
+                                buffer = buffer[-overlap_frames:] if len(buffer) > overlap_frames else []
+                                speech_dur = len(buffer) * FRAME_DURATION
+                        
+                        # Hard limit safety check
+                        if speech_dur >= MAX_UTTERANCE_DURATION:
+                            logging.info(f"⏱️ Max duration reached ({MAX_UTTERANCE_DURATION}s), transcribing...")
+                            submit_transcription(buffer, is_partial=False)
+                            buffer = []
+                            speech_dur = 0.0
+                            time_since_last_transcription = 0.0
+                            
+                    else:
+                        # Silence detected
+                        if is_speaking:
+                            buffer.append(frame_mono.copy())
+                            silence_dur += FRAME_DURATION
+                            time_since_last_transcription += FRAME_DURATION
+                            
+                            # Check if silence threshold is reached
+                            if silence_dur >= PAUSE_THRESHOLD:
+                                logging.info(f"🔴 Pause detected ({silence_dur:.1f}s), transcribing...")
+                                submit_transcription(buffer, is_partial=False)
+                                
+                                # Reset state
+                                buffer = []
+                                is_speaking = False
+                                silence_dur = 0.0
+                                speech_dur = 0.0
+                                time_since_last_transcription = 0.0
+                        else:
+                            # Not speaking, just cleanup occasionally
+                            if len(pending_futures) > 5:
+                                cleanup_completed_futures()
 
         except Exception as e:
             logging.error(f"Audio processing error: {e}")
+        finally:
+            executor.shutdown(wait=False)
+    
+    def _transcribe_buffer(self, buffer, chunk_num, is_partial=False):
+        """Transcribe accumulated audio buffer and save to database."""
+        try:
+            # Concatenate all frames
+            audio_data = np.concatenate(buffer)
+            duration = len(audio_data) / 16000  # SAMPLE_RATE
+            
+            # Skip if too quiet
+            if np.max(np.abs(audio_data)) < 0.01:
+                logging.debug("   ⚠️ Too quiet, skipped")
+                return
+            
+            # Build transcribe kwargs - use faster settings for live mode
+            transcribe_kwargs = dict(
+                beam_size=3,  # Reduced from 5 for speed
+                best_of=3,
+                vad_filter=True,
+                vad_parameters=dict(min_silence_duration_ms=300),  # Reduced from 500
+                condition_on_previous_text=True,  # Enable for better continuity
+                no_speech_threshold=0.5,  # Lowered from 0.6
+            )
+            if self.transcription_language:
+                transcribe_kwargs["language"] = self.transcription_language
+            
+            start_time = time.time()
+            segments, info = self.model.transcribe(audio_data, **transcribe_kwargs)
+            
+            # Check allowed languages
+            if (
+                not self.transcription_language
+                and self.allowed_languages
+                and info.language not in self.allowed_languages
+            ):
+                logging.info(f"Detected language '{info.language}' is not allowed. Skipping.")
+                return
+            
+            # Collect all text segments
+            texts = [s.text.strip() for s in segments if s.text.strip()]
+            if texts:
+                full_text = " ".join(texts)
+                proc_time = time.time() - start_time
+                prefix = "📝" if is_partial else "🎯"
+                logging.info(f"{prefix} [{chunk_num}] ({proc_time:.1f}s) {full_text[:100]}{'...' if len(full_text) > 100 else ''}")
+                self.write_transcript(full_text)
+            else:
+                logging.debug(f"   ⚠️ No text detected in chunk {chunk_num}")
+                
+        except Exception as e:
+            logging.error(f"Transcription error in chunk {chunk_num}: {e}")
 
     async def run(self, headless=True):
         self.is_running = True

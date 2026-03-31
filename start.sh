@@ -89,10 +89,38 @@ else
 fi
 
 # ─── 2. Summarizer service (FastAPI) ─────────────────────────
+SUMMARIZER_DIR="$ROOT_DIR/services/summarizer"
+
+echo ""
+echo -n "Use Python virtual environment for summarizer? [y/N]: "
+read USE_VENV
+
+if [[ "$USE_VENV" == "y" || "$USE_VENV" == "Y" ]]; then
+    log "Using virtual environment for summarizer..."
+    VENV_DIR="$SUMMARIZER_DIR/venv"
+    if [ ! -d "$VENV_DIR" ]; then
+        log "Creating Python virtual environment for summarizer..."
+        $PYTHON_CMD -m venv "$VENV_DIR"
+        "$VENV_DIR/bin/pip" install -q -r "$SUMMARIZER_DIR/requirements.txt"
+        ok "Virtual environment created and dependencies installed."
+    fi
+    SUMMARIZER_PYTHON="$VENV_DIR/bin/python"
+else
+    # Default is system Python
+    log "Using system Python for summarizer..."
+    # Check that required Python packages are installed
+    if ! $PYTHON_CMD -c "import whisper, httpx, fastapi, uvicorn" 2>/dev/null; then
+        warn "Some Python dependencies are missing for the summarizer service."
+        warn "Install them with: pip install -r services/summarizer/requirements.txt"
+        warn "Summarizer may fail to start."
+    fi
+    SUMMARIZER_PYTHON="$PYTHON_CMD"
+fi
+
 log "Starting Summarizer service..."
 (
-    cd "$ROOT_DIR/services/summarizer"
-    $PYTHON_CMD -m uvicorn main:app --reload --port 8000
+    cd "$SUMMARIZER_DIR"
+    $SUMMARIZER_PYTHON -m uvicorn main:app --reload --port 8000
 ) &
 PIDS+=($!)
 ok "Summarizer starting on http://localhost:8000 (PID ${PIDS[-1]})"

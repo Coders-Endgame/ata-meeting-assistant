@@ -10,6 +10,16 @@ This is a React-based meeting assistant application built with Vite and Supabase
 - **Session Management**: Create and join meeting sessions
 - **Audio Upload**: Upload audio files for transcription and summarization
 
+## Screenshots
+
+| Landing Page | Main Dashboard |
+|:---:|:---:|
+| <img src="screenshots/landing-page.png" alt="Landing Page" width="500"/> | <img src="screenshots/main-page.png" alt="Main Dashboard" width="500"/> |
+
+| Online Session | Offline Session |
+|:---:|:---:|
+| <img src="screenshots/online-session.png" alt="Online Session" width="500"/> | <img src="screenshots/offline-session.png" alt="Offline Session" width="500"/> |
+
 ## Project Structure
 
 ```

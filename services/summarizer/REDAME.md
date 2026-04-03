@@ -1,4 +1,3 @@
-The summarizer service provides a RESTful API for backend transcription and summarization for both online and offline sessions.
 ## Summarizer Service
 
 The summarizer service provides a RESTful API for backend transcription and summarization for both **online** and **offline** sessions.

@@ -3,6 +3,10 @@ import os
 import tempfile
 from typing import Optional
 
+# workaround for SSL self signed certificate error (only bypasses problem)
+"""import ssl
+ssl._create_default_https_context = ssl._create_unverified_context"""
+
 import whisper
 from config import WHISPER_MODEL
 from database import _update_processing_status, supabase

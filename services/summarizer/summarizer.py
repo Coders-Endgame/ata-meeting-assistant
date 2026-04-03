@@ -7,6 +7,7 @@ from config import OLLAMA_HOST, OLLAMA_MODEL
 from database import supabase
 from fastapi import HTTPException
 from models import ActionItemOut
+from llm_providers import get_provider 
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,11 @@ def parse_summary_response(raw: str) -> dict:
 
 async def _run_summarization(session_id: str, model: Optional[str] = None) -> dict:
     """Internal summarization logic, reusable by both /summarize and /transcribe."""
+
+    # Fetch the session mode - offline or Zoom (online)
+    mode, source_type = get_session_mode(session_id=session_id)
+    logger.info(f"Fetched session mode: {mode} and model: {model}")
+
     # 1. Fetch transcripts from Supabase
     result = (
         supabase.table("transcripts")
@@ -69,7 +75,25 @@ async def _run_summarization(session_id: str, model: Optional[str] = None) -> di
         f"Built transcript with {len(transcripts)} entries ({len(transcript_text)} chars)"
     )
 
+
+    # 3. Call provider based on model and fallback to local if not available
+    provider = get_provider(mode, model)
+
+    try:
+        parsed = await provider.summarize(transcript_text)
+        logger.info(f"Summarization completed using mode='{mode}' (source_type='{source_type}')")
+    except Exception as e:
+        if mode != "local":
+            logger.warning(f"Remote provider failed: {e}. Falling back to local Ollama.")
+            fallback = get_provider("local", None)
+            parsed = await fallback.summarize(transcript_text)
+        else:
+            logger.error(f"Local provider failed: {e}")
+            raise HTTPException(status_code=503, detail="Summarization failed. Make sure Ollama is running.")
+        
+    """  
     # 3. Call Ollama
+      
     use_model = model or OLLAMA_MODEL
     user_prompt = f"Here is the meeting transcript:\n\n{transcript_text}\n\nPlease analyze the transcript and produce the JSON output."
 
@@ -98,6 +122,7 @@ async def _run_summarization(session_id: str, model: Optional[str] = None) -> di
     raw = ollama_response.json().get("response", "")
     logger.info(f"Ollama raw response: {raw[:500]}")
     parsed = parse_summary_response(raw)
+    """
 
     summary_text = parsed.get("summary", "")
     action_items_raw = parsed.get("action_items", [])
@@ -177,3 +202,22 @@ async def _run_summarization(session_id: str, model: Optional[str] = None) -> di
         "summary": summary_text,
         "action_items": [item.model_dump() for item in action_items_out],
     }
+
+
+# HELPER
+def get_session_mode(session_id: str) -> tuple[str, str]:
+    session_result = (
+        supabase.table("sessions")
+        .select("source_type")
+        .eq("id", session_id)
+        .single()
+        .execute()
+    )
+
+    if not session_result.data:
+       raise HTTPException(status_code=404, detail="Session not found")
+
+    source_type = session_result.data["source_type"]
+    mode = "remote" if source_type == "offline" else "local"
+
+    return mode, source_type

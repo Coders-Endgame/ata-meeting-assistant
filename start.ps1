@@ -79,10 +79,22 @@ if (Get-Command ollama -ErrorAction SilentlyContinue) {
 }
 
 # ─── 2. Summarizer service (FastAPI) ─────────────────────────
+$SUMMARIZER_DIR = "$ROOT_DIR\services\summarizer"
+
+$VENV_DIR = "$SUMMARIZER_DIR\venv"
+Log "Using virtual environment for summarizer..."
+if (-Not (Test-Path "$VENV_DIR")) {
+    Log "Creating Python virtual environment for summarizer..."
+    & $PYTHON_CMD -m venv "$VENV_DIR"
+    & "$VENV_DIR\Scripts\pip.exe" install -q -r "$SUMMARIZER_DIR\requirements.txt"
+    Ok "Virtual environment created and dependencies installed."
+}
+$SUMMARIZER_PYTHON = "$VENV_DIR\Scripts\python.exe"
+
 Log "Starting Summarizer service..."
-$summarizerProc = Start-Process -FilePath $PYTHON_CMD `
+$summarizerProc = Start-Process -FilePath $SUMMARIZER_PYTHON `
     -ArgumentList "-m uvicorn main:app --reload --port 8000" `
-    -WorkingDirectory "$ROOT_DIR\services\summarizer" `
+    -WorkingDirectory $SUMMARIZER_DIR `
     -PassThru -NoNewWindow
 $script:Processes += $summarizerProc
 Ok "Summarizer starting on http://localhost:8000 (PID $($summarizerProc.Id))"

@@ -89,10 +89,22 @@ else
 fi
 
 # ─── 2. Summarizer service (FastAPI) ─────────────────────────
+SUMMARIZER_DIR="$ROOT_DIR/services/summarizer"
+
+    VENV_DIR="$SUMMARIZER_DIR/venv"
+    log "Using virtual environment for summarizer..."
+    if [ ! -d "$VENV_DIR" ]; then
+        log "Creating Python virtual environment for summarizer..."
+        $PYTHON_CMD -m venv "$VENV_DIR"
+        "$VENV_DIR/bin/pip" install -q -r "$SUMMARIZER_DIR/requirements.txt"
+        ok "Virtual environment created and dependencies installed."
+    fi
+    SUMMARIZER_PYTHON="$VENV_DIR/bin/python"
+
 log "Starting Summarizer service..."
 (
-    cd "$ROOT_DIR/services/summarizer"
-    $PYTHON_CMD -m uvicorn main:app --reload --port 8000
+    cd "$SUMMARIZER_DIR"
+    $SUMMARIZER_PYTHON -m uvicorn main:app --reload --port 8000
 ) &
 PIDS+=($!)
 ok "Summarizer starting on http://localhost:8000 (PID ${PIDS[-1]})"

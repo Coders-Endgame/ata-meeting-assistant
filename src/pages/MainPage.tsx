@@ -378,12 +378,6 @@ export default function MainPage({ session }: { session: any }) {
 
     return (
         <div className="main-page">
-            {/* Animated background decoration */}
-            <div className="main-bg-decor">
-                <div className="bg-orb bg-orb-1"></div>
-                <div className="bg-orb bg-orb-2"></div>
-                <div className="bg-orb bg-orb-3"></div>
-            </div>
 
             <div className="main-content-logged-in main-content-area">
                 <div className="split-container meetings-split-container">

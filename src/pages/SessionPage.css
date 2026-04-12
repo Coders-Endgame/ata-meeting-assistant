@@ -183,6 +183,38 @@
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   margin: var(--spacing-md);
+  transition: flex 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+}
+
+.panel.panel-hidden {
+  flex: 0 !important;
+  overflow: hidden;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  pointer-events: none;
+  min-width: 0;
+  width: 0;
+}
+
+.panel.panel-maximized {
+  flex: 1 !important;
+}
+
+/* Panel maximize/restore button */
+.panel-maximize-btn {
+  color: var(--text-color-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-sm) !important;
+  padding: 4px !important;
+  transition: all 0.2s ease !important;
+}
+
+.panel-maximize-btn:hover {
+  color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  background-color: rgba(99, 102, 241, 0.08) !important;
 }
 
 .scrollable-content {
@@ -275,14 +307,10 @@
 .generate-btn {
   background: linear-gradient(135deg, var(--primary-color), #8b5cf6) !important;
   color: #fff !important;
-  font-weight: 600 !important;
-  font-size: 0.8rem !important;
-  text-transform: none !important;
   border-radius: var(--radius-sm) !important;
-  padding: 4px 14px !important;
+  padding: 6px !important;
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3) !important;
   transition: all 0.2s ease !important;
-  white-space: nowrap;
 }
 
 .generate-btn:hover:not(:disabled) {

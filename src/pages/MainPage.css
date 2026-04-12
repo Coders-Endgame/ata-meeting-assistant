@@ -45,46 +45,6 @@
     z-index: 1;
 }
 
-/* ── Animated background orbs ── */
-.main-bg-decor {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-    overflow: hidden;
-}
-
-.bg-orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.18;
-}
-
-.bg-orb-1 {
-    width: 420px;
-    height: 420px;
-    background: var(--il-accent1);
-    top: -120px;
-    left: -80px;
-}
-
-.bg-orb-2 {
-    width: 340px;
-    height: 340px;
-    background: var(--il-accent2);
-    bottom: -100px;
-    right: 10%;
-}
-
-.bg-orb-3 {
-    width: 280px;
-    height: 280px;
-    background: var(--il-accent3);
-    top: 40%;
-    right: -60px;
-}
-
 /* ── Section Cards (glass-morphism) ── */
 .section-card {
     background: rgba(255, 255, 255, 0.55);
@@ -99,7 +59,7 @@
     gap: var(--spacing-sm);
     width: 100%;
     max-width: 420px;
-    transition: transform 0.35s cubic-bezier(.4,0,.2,1), box-shadow 0.35s ease;
+    transition: transform 0.35s cubic-bezier(.4, 0, .2, 1), box-shadow 0.35s ease;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
 }
 
@@ -188,7 +148,7 @@
     border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(.4,0,.2,1);
+    transition: all 0.3s cubic-bezier(.4, 0, .2, 1);
     position: relative;
     overflow: hidden;
 }
@@ -293,9 +253,17 @@
 }
 
 @keyframes btnPulse {
-    0%   { box-shadow: 0 0 0 0 rgba(100, 108, 255, 0.45); }
-    70%  { box-shadow: 0 0 0 12px rgba(100, 108, 255, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(100, 108, 255, 0); }
+    0% {
+        box-shadow: 0 0 0 0 rgba(100, 108, 255, 0.45);
+    }
+
+    70% {
+        box-shadow: 0 0 0 12px rgba(100, 108, 255, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(100, 108, 255, 0);
+    }
 }
 
 /* ── All Sessions Dialog ── */
@@ -361,7 +329,7 @@
     border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(.4,0,.2,1);
+    transition: all 0.3s cubic-bezier(.4, 0, .2, 1);
 }
 
 .all-sessions-item:hover {
@@ -386,31 +354,52 @@
    ═══════════════════════════════════════════════ */
 
 .anim-fade-up {
-    animation: fadeUp 0.7s cubic-bezier(.4,0,.2,1) both;
+    animation: fadeUp 0.7s cubic-bezier(.4, 0, .2, 1) both;
 }
 
 .anim-slide-left {
-    animation: slideLeft 0.65s cubic-bezier(.4,0,.2,1) both;
+    animation: slideLeft 0.65s cubic-bezier(.4, 0, .2, 1) both;
 }
 
 .anim-slide-right {
-    animation: slideRight 0.65s cubic-bezier(.4,0,.2,1) both;
+    animation: slideRight 0.65s cubic-bezier(.4, 0, .2, 1) both;
     animation-delay: 0.1s;
 }
 
 @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(32px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(32px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes slideLeft {
-    from { opacity: 0; transform: translateX(-40px); }
-    to   { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(-40px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 @keyframes slideRight {
-    from { opacity: 0; transform: translateX(40px); }
-    to   { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(40px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 /* ═══════════════════════════════════════════════
@@ -430,14 +419,32 @@
 /* Illustrations are static — no continuous motion */
 
 /* Video tiles stagger pop-in */
-.il-tile-1 { animation: tilePop 0.5s ease both 0.2s; }
-.il-tile-2 { animation: tilePop 0.5s ease both 0.35s; }
-.il-tile-3 { animation: tilePop 0.5s ease both 0.5s; }
-.il-tile-4 { animation: tilePop 0.5s ease both 0.65s; }
+.il-tile-1 {
+    animation: tilePop 0.5s ease both 0.2s;
+}
+
+.il-tile-2 {
+    animation: tilePop 0.5s ease both 0.35s;
+}
+
+.il-tile-3 {
+    animation: tilePop 0.5s ease both 0.5s;
+}
+
+.il-tile-4 {
+    animation: tilePop 0.5s ease both 0.65s;
+}
 
 @keyframes tilePop {
-    from { opacity: 0; transform: scale(0.7); }
-    to   { opacity: 0.8; transform: scale(1); }
+    from {
+        opacity: 0;
+        transform: scale(0.7);
+    }
+
+    to {
+        opacity: 0.8;
+        transform: scale(1);
+    }
 }
 
 

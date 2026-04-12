@@ -233,6 +233,9 @@ export default function Topbar({ session, theme, toggleTheme }: TopbarProps) {
                         <div
                             onClick={handleMenuClick}
                             className="user-profile-widget"
+                            role="button"
+                            aria-label="Open user menu"
+                            tabIndex={0}
                         >
                             <Avatar sx={{ width: 32, height: 32 }}>
                                 {displayName ? displayName.charAt(0).toUpperCase() : 'U'}

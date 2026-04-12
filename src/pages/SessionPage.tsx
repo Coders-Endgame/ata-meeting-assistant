@@ -42,6 +42,8 @@ import SendIcon from '@mui/icons-material/Send';
 import CloseIcon from '@mui/icons-material/Close';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import DescriptionIcon from '@mui/icons-material/Description';
+import OpenInFullIcon from '@mui/icons-material/OpenInFull';
+import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen';
 import DataObjectIcon from '@mui/icons-material/DataObject';
 import './SessionPage.css';
 
@@ -125,6 +127,7 @@ export default function SessionPage() {
 
     // Layout states
     const [leftPanelWidth, setLeftPanelWidth] = useState(50);
+    const [maximizedPanel, setMaximizedPanel] = useState<'transcript' | 'summary' | null>(null);
     const [showParticipants, setShowParticipants] = useState(false);
     const isResizing = useRef(false);
     const transcriptRef = useRef<HTMLDivElement>(null);
@@ -839,7 +842,12 @@ export default function SessionPage() {
                             ))}
                         </AvatarGroup>
                         <Tooltip title="Share session">
-                            <IconButton size="small" onClick={() => setOpenShareDialog(true)} className="share-button">
+                            <IconButton
+                                size="small"
+                                onClick={() => setOpenShareDialog(true)}
+                                className="share-button"
+                                aria-label="Share session"
+                            >
                                 <PersonAddIcon sx={{ fontSize: '1.1rem' }} />
                             </IconButton>
                         </Tooltip>
@@ -952,9 +960,9 @@ export default function SessionPage() {
             <div className="session-content">
                 {/* Transcript Panel */}
                 <Paper
-                    className="panel transcript"
+                    className={`panel transcript${maximizedPanel === 'summary' ? ' panel-hidden' : ''}${maximizedPanel === 'transcript' ? ' panel-maximized' : ''}`}
                     elevation={0}
-                    style={{ flex: leftPanelWidth }}
+                    style={{ flex: maximizedPanel === 'transcript' ? 100 : maximizedPanel === 'summary' ? 0 : leftPanelWidth }}
                     ref={transcriptRef}
                     sx={{ backgroundColor: 'var(--widget-bg)' }}
                 >
@@ -963,17 +971,33 @@ export default function SessionPage() {
                             <Typography variant="h6" sx={{ fontWeight: 600, color: 'var(--heading-color)' }}>
                                 Transcript
                             </Typography>
-                            {transcripts.length > 0 && (
-                                <Tooltip title="Export transcript">
+                            <Box display="flex" alignItems="center" gap={0.5}>
+                                {transcripts.length > 0 && (
+                                    <Tooltip title="Export transcript">
+                                        <IconButton
+                                            size="small"
+                                            className="export-btn"
+                                            onClick={(e) => setTranscriptExportAnchor(e.currentTarget)}
+                                            aria-label="Export transcript"
+                                        >
+                                            <FileDownloadIcon sx={{ fontSize: '1.1rem' }} />
+                                        </IconButton>
+                                    </Tooltip>
+                                )}
+                                <Tooltip title={maximizedPanel === 'transcript' ? 'Restore split view' : 'Maximize transcript'}>
                                     <IconButton
                                         size="small"
-                                        className="export-btn"
-                                        onClick={(e) => setTranscriptExportAnchor(e.currentTarget)}
+                                        className="panel-maximize-btn"
+                                        onClick={() => setMaximizedPanel(maximizedPanel === 'transcript' ? null : 'transcript')}
+                                        aria-label={maximizedPanel === 'transcript' ? 'Restore split view' : 'Maximize transcript'}
                                     >
-                                        <FileDownloadIcon sx={{ fontSize: '1.1rem' }} />
+                                        {maximizedPanel === 'transcript'
+                                            ? <CloseFullscreenIcon sx={{ fontSize: '1rem' }} />
+                                            : <OpenInFullIcon sx={{ fontSize: '1rem' }} />
+                                        }
                                     </IconButton>
                                 </Tooltip>
-                            )}
+                            </Box>
                         </Box>
                         <Divider sx={{ mb: 2, borderColor: 'var(--border-color)' }} />
                         <div className="scrollable-content" ref={transcriptScrollRef}>
@@ -1049,15 +1073,17 @@ export default function SessionPage() {
                 </Paper>
 
                 {/* Resizer */}
-                <div className="resizer" onMouseDown={startResizing}>
-                    <div className="resizer-bar"></div>
-                </div>
+                {!maximizedPanel && (
+                    <div className="resizer" onMouseDown={startResizing}>
+                        <div className="resizer-bar"></div>
+                    </div>
+                )}
 
                 {/* Summary & Action Items Panel */}
                 <Paper
-                    className="panel summary"
+                    className={`panel summary${maximizedPanel === 'transcript' ? ' panel-hidden' : ''}${maximizedPanel === 'summary' ? ' panel-maximized' : ''}`}
                     elevation={0}
-                    style={{ flex: 100 - leftPanelWidth }}
+                    style={{ flex: maximizedPanel === 'summary' ? 100 : maximizedPanel === 'transcript' ? 0 : (100 - leftPanelWidth) }}
                     ref={summaryRef}
                     sx={{ backgroundColor: 'var(--widget-bg)' }}
                 >
@@ -1066,7 +1092,7 @@ export default function SessionPage() {
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                             <Box display="flex" alignItems="center" gap={1}>
                                 <Typography variant="h6" sx={{ fontWeight: 600, color: 'var(--heading-color)' }}>
-                                    Meeting Summary
+                                    Summary
                                 </Typography>
                                 {summary && (
                                     <Tooltip title="Export summary">
@@ -1074,11 +1100,25 @@ export default function SessionPage() {
                                             size="small"
                                             className="export-btn"
                                             onClick={(e) => setSummaryExportAnchor(e.currentTarget)}
+                                            aria-label="Export summary"
                                         >
                                             <FileDownloadIcon sx={{ fontSize: '1.1rem' }} />
                                         </IconButton>
                                     </Tooltip>
                                 )}
+                                <Tooltip title={maximizedPanel === 'summary' ? 'Restore split view' : 'Maximize summary'}>
+                                    <IconButton
+                                        size="small"
+                                        className="panel-maximize-btn"
+                                        onClick={() => setMaximizedPanel(maximizedPanel === 'summary' ? null : 'summary')}
+                                        aria-label={maximizedPanel === 'summary' ? 'Restore split view' : 'Maximize summary'}
+                                    >
+                                        {maximizedPanel === 'summary'
+                                            ? <CloseFullscreenIcon sx={{ fontSize: '1rem' }} />
+                                            : <OpenInFullIcon sx={{ fontSize: '1rem' }} />
+                                        }
+                                    </IconButton>
+                                </Tooltip>
                             </Box>
 
                             {botStatus.status === 'active' ? (
@@ -1102,16 +1142,18 @@ export default function SessionPage() {
 
                                     {/* Show Generate button only in manual mode */}
                                     {summaryMode === 'manual' && (
-                                        <Button
-                                            variant="contained"
-                                            size="small"
-                                            startIcon={isSummarizing ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
-                                            onClick={handleGenerateSummary}
-                                            disabled={isSummarizing || transcripts.length === 0}
-                                            className="generate-btn"
-                                        >
-                                            {isSummarizing ? 'Generating...' : summary ? 'Regenerate' : 'Generate'}
-                                        </Button>
+                                        <Tooltip title={isSummarizing ? 'Generating...' : summary ? 'Regenerate summary' : 'Generate summary'}>
+                                            <span>
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={handleGenerateSummary}
+                                                    disabled={isSummarizing || transcripts.length === 0}
+                                                    className="generate-btn"
+                                                >
+                                                    {isSummarizing ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
+                                                </IconButton>
+                                            </span>
+                                        </Tooltip>
                                     )}
 
                                     {/* Show auto-refresh indicator in live mode */}
@@ -1125,16 +1167,18 @@ export default function SessionPage() {
                                     )}
                                 </Box>
                             ) : (
-                                <Button
-                                    variant="contained"
-                                    size="small"
-                                    startIcon={isSummarizing ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
-                                    onClick={handleGenerateSummary}
-                                    disabled={isSummarizing || transcripts.length === 0}
-                                    className="generate-btn"
-                                >
-                                    {isSummarizing ? 'Generating...' : summary ? 'Regenerate' : 'Generate'}
-                                </Button>
+                                <Tooltip title={isSummarizing ? 'Generating...' : summary ? 'Regenerate summary' : 'Generate summary'}>
+                                    <span>
+                                        <IconButton
+                                            size="small"
+                                            onClick={handleGenerateSummary}
+                                            disabled={isSummarizing || transcripts.length === 0}
+                                            className="generate-btn"
+                                        >
+                                            {isSummarizing ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
                             )}
                         </Box>
 
@@ -1320,6 +1364,7 @@ export default function SessionPage() {
                     className={`chat-fab ${chatOpen ? 'hidden' : ''}`}
                     onClick={() => setChatOpen(true)}
                     disabled={transcripts.length === 0}
+                    aria-label="Ask about this meeting"
                 >
                     <ChatIcon />
                 </button>

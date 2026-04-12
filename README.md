@@ -29,7 +29,7 @@ ata-meeting-assistant/
 │   ├── pages/                    #   Page-level components
 │   ├── assets/                   #   Static assets
 │   ├── App.tsx                   #   Root component & routing
-│   └── supabaseClient.ts        #   Supabase client init
+│   └── supabaseClient.ts         #   Supabase client init
 │
 ├── services/                     # Backend services
 │   ├── api/                      #   Express.js API gateway (port 3001)

@@ -11,4 +11,8 @@ services:
       - ./transcripts:/app/transcripts
       - ./bot.py:/app/bot.py
       - ./config.json:/app/config.json
+      - whisper-models:/root/.cache/huggingface
+
+volumes:
+  whisper-models:
 

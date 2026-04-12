@@ -1,20 +1,16 @@
 ## Backend API Server
 
 ### Folder Structure
-
+```
 services/api/
-|
-├── server.js                       ← define routers, /health, /api/config
-│
+├── server.js           ← express app entry point, mounts routers, /health, /api/config
 ├── lib/
-│   └── supabase.js                 ← initializes Supabase client
-│
-│
+│   └── supabase.js     ← initializes and exports the Supabase client singleton
 └── routes/
-    ├── summarizerRouter.js          ← /api/transcribe, /api/summarize, /api/chat, /api/models
-    ├── preferenceRoutes.js          ← /api/preferences/:userId (GET and PUT)
-    └── botRouter.js                 ← /api/bot/*
-
+    ├── botRouter.js          ← /api/bot/*
+    ├── summarizerRouter.js   ← /api/transcribe, /api/summarize, /api/chat, /api/models
+    └── preferenceRoutes.js   ← /api/preferences/:userId (GET, PUT)
+```
 ### Running the service
 
 Install dependencies:

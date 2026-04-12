@@ -227,15 +227,34 @@ class ZoomBot:
         logging.info(f"Navigating to {target_url}")
 
         try:
-            await self.page.goto(target_url, timeout=60000)
-            await self.page.wait_for_load_state("networkidle")
+            await self.page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
         except Exception as e:
             logging.error(f"Navigation error: {e}")
 
         # Join Logic (Ported from TS)
         logging.info("Waiting for join interface...")
         self.report_status("joining")  # Report joining status
-        await asyncio.sleep(3)
+
+        # Wait for the Zoom join UI to fully render (SPA needs time after DOM ready)
+        join_ui_selectors = ", ".join([
+            'input[type="text"]',
+            "input#inputname",
+            'input[placeholder*="name"]',
+            'input[placeholder*="Name"]',
+            "#input-for-name",
+            "input.preview-meeting-info-field-input",
+            "button.preview-join-button",
+            "button.zm-btn--primary",
+            "#joinBtn",
+        ])
+        try:
+            await self.page.locator(join_ui_selectors).first.wait_for(
+                state="visible", timeout=45000
+            )
+            logging.info("Join UI is ready")
+        except Exception as e:
+            logging.warning(f"Join UI elements not found within timeout, proceeding anyway: {e}")
+        await asyncio.sleep(2)
 
         # Name Input
         name_input_selectors = [

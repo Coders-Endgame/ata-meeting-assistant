@@ -75,30 +75,15 @@ if (Get-Command ollama -ErrorAction SilentlyContinue) {
 # ─── 2. Summarizer service (FastAPI) ─────────────────────────
 $SUMMARIZER_DIR = "$ROOT_DIR\services\summarizer"
 
-Write-Host ""
-$USE_VENV = Read-Host "Use Python virtual environment for summarizer? [y/N]"
-
-if ($USE_VENV -match "^[yY]$") {
-    Log "Using virtual environment for summarizer..."
-    $VENV_DIR = "$SUMMARIZER_DIR\venv"
-    if (-Not (Test-Path "$VENV_DIR")) {
-        Log "Creating Python virtual environment for summarizer..."
-        & $PYTHON_CMD -m venv "$VENV_DIR"
-        & "$VENV_DIR\Scripts\pip.exe" install -q -r "$SUMMARIZER_DIR\requirements.txt"
-        Ok "Virtual environment created and dependencies installed."
-    }
-    $SUMMARIZER_PYTHON = "$VENV_DIR\Scripts\python.exe"
-} else {
-    Log "Using system Python for summarizer..."
-    # Check that required Python packages are installed
-    $null = & $PYTHON_CMD -c "import whisper, httpx, fastapi, uvicorn" 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        Warn "Some Python dependencies are missing for the summarizer service."
-        Warn "Install them with: pip install -r services\summarizer\requirements.txt"
-        Warn "Summarizer may fail to start."
-    }
-    $SUMMARIZER_PYTHON = $PYTHON_CMD
+$VENV_DIR = "$SUMMARIZER_DIR\venv"
+Log "Using virtual environment for summarizer..."
+if (-Not (Test-Path "$VENV_DIR")) {
+    Log "Creating Python virtual environment for summarizer..."
+    & $PYTHON_CMD -m venv "$VENV_DIR"
+    & "$VENV_DIR\Scripts\pip.exe" install -q -r "$SUMMARIZER_DIR\requirements.txt"
+    Ok "Virtual environment created and dependencies installed."
 }
+$SUMMARIZER_PYTHON = "$VENV_DIR\Scripts\python.exe"
 
 Log "Starting Summarizer service..."
 $summarizerProc = Start-Process -FilePath $SUMMARIZER_PYTHON `

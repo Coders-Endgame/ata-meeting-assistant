@@ -91,13 +91,8 @@ fi
 # ─── 2. Summarizer service (FastAPI) ─────────────────────────
 SUMMARIZER_DIR="$ROOT_DIR/services/summarizer"
 
-echo ""
-echo -n "Use Python virtual environment for summarizer? [y/N]: "
-read USE_VENV
-
-if [[ "$USE_VENV" == "y" || "$USE_VENV" == "Y" ]]; then
-    log "Using virtual environment for summarizer..."
     VENV_DIR="$SUMMARIZER_DIR/venv"
+    log "Using virtual environment for summarizer..."
     if [ ! -d "$VENV_DIR" ]; then
         log "Creating Python virtual environment for summarizer..."
         $PYTHON_CMD -m venv "$VENV_DIR"
@@ -105,17 +100,6 @@ if [[ "$USE_VENV" == "y" || "$USE_VENV" == "Y" ]]; then
         ok "Virtual environment created and dependencies installed."
     fi
     SUMMARIZER_PYTHON="$VENV_DIR/bin/python"
-else
-    # Default is system Python
-    log "Using system Python for summarizer..."
-    # Check that required Python packages are installed
-    if ! $PYTHON_CMD -c "import whisper, httpx, fastapi, uvicorn" 2>/dev/null; then
-        warn "Some Python dependencies are missing for the summarizer service."
-        warn "Install them with: pip install -r services/summarizer/requirements.txt"
-        warn "Summarizer may fail to start."
-    fi
-    SUMMARIZER_PYTHON="$PYTHON_CMD"
-fi
 
 log "Starting Summarizer service..."
 (

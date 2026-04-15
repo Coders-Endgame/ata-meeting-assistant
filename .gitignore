@@ -16,6 +16,8 @@ __pycache__/
 test-results/
 playwright-report/
 venv/
+tmp/
+final-report/
 
 # Editor directories and files
 .vscode/*
@@ -28,3 +30,4 @@ venv/
 *.sln
 *.sw?
 *venv
+.codex

@@ -45,12 +45,12 @@ def parse_summary_response(raw: str) -> dict:
             ) from error
 
 
-async def _run_summarization(session_id: str, model: Optional[str] = None) -> dict:
+async def _run_summarization(session_id: str, model: Optional[str] = None, language: Optional[str] = 'en') -> dict:
     """Internal summarization logic, reusable by both /summarize and /transcribe."""
 
     # Fetch the session mode - offline or Zoom (online)
     mode, source_type = get_session_mode(session_id=session_id)
-    logger.info(f"Fetched session mode: {mode} and model: {model}")
+    logger.info(f"Fetched session mode: {mode} and model: {model} and language: {language}")
 
     # 1. Fetch transcripts from Supabase
     result = (
@@ -80,13 +80,13 @@ async def _run_summarization(session_id: str, model: Optional[str] = None) -> di
     provider = get_provider(mode, model)
 
     try:
-        parsed = await provider.summarize(transcript_text)
+        parsed = await provider.summarize(transcript_text, language=language)
         logger.info(f"Summarization completed using mode='{mode}' (source_type='{source_type}')")
     except Exception as e:
         if mode != "local":
             logger.warning(f"Remote provider failed: {e}. Falling back to local Ollama.")
             fallback = get_provider("local", None)
-            parsed = await fallback.summarize(transcript_text)
+            parsed = await fallback.summarize(transcript_text, language=language)
         else:
             logger.error(f"Local provider failed: {e}")
             raise HTTPException(status_code=503, detail="Summarization failed. Make sure Ollama is running.")

@@ -7,11 +7,13 @@ from pydantic import BaseModel
 class SummarizeRequest(BaseModel):
     session_id: str
     model: Optional[str] = None
+    language: Optional[str] = 'en'
 
 
 class TranscribeRequest(BaseModel):
     session_id: str
     model: Optional[str] = None
+    language: Optional[str] = 'en'
 
 
 class ActionItemOut(BaseModel):

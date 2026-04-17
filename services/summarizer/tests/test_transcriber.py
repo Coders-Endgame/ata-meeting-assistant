@@ -41,7 +41,7 @@ async def test_transcribe_and_summarize_updates_status_and_preserves_requested_l
     statuses = []
     recorded_models = []
 
-    async def fake_run_summarization(session_id, model=None):
+    async def fake_run_summarization(session_id, model=None, language='en'):
         recorded_models.append((session_id, model))
         return {"summary": "done", "action_items": []}
 

@@ -263,10 +263,24 @@ export default function MainPage({ session }: { session: any }) {
             navigate(`/session/${newSession.id}`);
 
             // 3. Fire background transcription request (don't await)
+            let preferredLanguage = 'en';
+            try {
+                const { data: prefData } = await supabase
+                    .from('user_preferences')
+                    .select('preferred_language')
+                    .eq('user_id', session.user.id)
+                    .single();
+                if (prefData?.preferred_language) {
+                    preferredLanguage = prefData.preferred_language;
+                }
+            } catch (err) {
+                console.warn('Could not fetch language preference, defaulting to en:', err);
+            }
+
             fetch('/api/transcribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId: newSession.id }),
+                body: JSON.stringify({ sessionId: newSession.id, language: preferredLanguage }),
             }).catch(err => {
                 console.warn('Could not start transcription:', err);
             });

@@ -26,7 +26,7 @@ def get_whisper_model():
     return _whisper_model
 
 
-async def _transcribe_and_summarize(session_id: str, model: Optional[str] = None):
+async def _transcribe_and_summarize(session_id: str, model: Optional[str] = None, language: Optional[str] = 'en'):
     """Background task: transcribe audio, then summarize."""
     try:
         # 1. Update status to transcribing
@@ -119,7 +119,7 @@ async def _transcribe_and_summarize(session_id: str, model: Optional[str] = None
         _update_processing_status(session_id, "summarizing")
 
         try:
-            await _run_summarization(session_id, model=model)
+            await _run_summarization(session_id, model=model, language=language)
             logger.info(f"Summarization complete for session {session_id}")
         except Exception as e:
             logger.error(f"Summarization failed for session {session_id}: {e}")

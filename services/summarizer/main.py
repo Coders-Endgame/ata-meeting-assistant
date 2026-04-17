@@ -52,9 +52,9 @@ async def list_models():
 @app.post("/summarize", response_model=SummarizeResponse)
 async def summarize(req: SummarizeRequest):
     session_id = req.session_id
-    logger.info(f"Summarize request for session: {session_id} (model={req.model})")
+    logger.info(f"Summarize request for session: {session_id} (model={req.model}, language={req.language})")
 
-    result = await _run_summarization(session_id, model=req.model)
+    result = await _run_summarization(session_id, model=req.model, language=req.language)
     return SummarizeResponse(
         summary=result["summary"],
         action_items=[ActionItemOut(**item) for item in result["action_items"]],
@@ -65,7 +65,7 @@ async def summarize(req: SummarizeRequest):
 async def transcribe(req: TranscribeRequest, background_tasks: BackgroundTasks):
     """Start transcription + summarization pipeline in the background."""
     session_id = req.session_id
-    logger.info(f"Transcribe request for session: {session_id}")
+    logger.info(f"Transcribe request for session: {session_id} (language={req.language})")
 
     # Verify session exists
     session_result = (
@@ -83,7 +83,7 @@ async def transcribe(req: TranscribeRequest, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=400, detail="Session has no audio file.")
 
     # Run transcription in background
-    background_tasks.add_task(_transcribe_and_summarize, session_id, req.model)
+    background_tasks.add_task(_transcribe_and_summarize, session_id, req.model, req.language)
 
     return {
         "status": "processing",

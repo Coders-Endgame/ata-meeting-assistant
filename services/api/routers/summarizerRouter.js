@@ -51,16 +51,16 @@ router.get('/models', async (req, res) => {
 
 // Transcribe endpoint - proxy to Python summarizer service
 router.post('/transcribe', async (req, res) => {
-    const { sessionId, model } = req.body;
+    const { sessionId, model, language } = req.body;
     if (!sessionId) return res.status(400).json({ error: 'sessionId is required' });
-    await proxyToSummarizer('/transcribe', { session_id: sessionId, model: model || undefined }, res, 'Transcription failed')
+    await proxyToSummarizer('/transcribe', { session_id: sessionId, model: model || undefined, language: language || 'en' }, res, 'Transcription failed')
 });
 
 // Summarize endpoint - proxy to Python summarizer service
 router.post('/summarize', async (req, res) => {
-    const { sessionId, model } = req.body;
+    const { sessionId, model, language } = req.body;
     if (!sessionId) return res.status(400).json({ error: 'sessionId is required' });
-    await proxyToSummarizer('/summarize', { session_id: sessionId, model: model || undefined }, res, 'Summarization failed')
+    await proxyToSummarizer('/summarize', { session_id: sessionId, model: model || undefined, language: language || 'en' }, res, 'Summarization failed')
 });
 
 // Chat endpoint - proxy to Python summarizer service

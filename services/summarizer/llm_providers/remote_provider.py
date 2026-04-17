@@ -11,12 +11,13 @@ class RemoteLLMProvider(BaseLLMProvider):
     def __init__(self, model: Optional[str] = None):
         self.model = REMOTE_LLM_MODEL 
 
-    async def summarize(self, transcript_text: str) -> dict:
+    async def summarize(self, transcript_text: str, language: str = 'en') -> dict:
         from summarizer import SYSTEM_PROMPT, parse_summary_response
 
         user_prompt = (
             f"Here is the meeting transcript:\n\n{transcript_text}"
             f"\n\nPlease analyze and produce the JSON output."
+            f"\n\nIMPORTANT: Both the summary and action items MUST be fully translated into the '{language}' language!"
         )
 
         if REMOTE_LLM_PROVIDER == "groq":

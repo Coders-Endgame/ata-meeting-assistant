@@ -89,7 +89,7 @@ async def test_models_endpoint_returns_503_when_ollama_is_unreachable(
 
 @pytest.mark.asyncio
 async def test_summarize_endpoint_uses_run_summarization(client, monkeypatch):
-    async def fake_run(session_id, model=None):
+    async def fake_run(session_id, model=None, language='en'):
         assert session_id == "session-1"
         assert model == "llama3.1"
         return {

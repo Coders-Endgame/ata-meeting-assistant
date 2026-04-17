@@ -487,7 +487,7 @@ export default function SessionPage() {
             if (!actionItemsError && actionItemsData) {
                 // Fetch assignees for all action items
                 const itemIds = actionItemsData.map(a => a.id);
-                let assigneeMap: Record<string, string> = {};
+                const assigneeMap: Record<string, string> = {};
 
                 if (itemIds.length > 0) {
                     const { data: assigneesData } = await supabase
@@ -591,10 +591,23 @@ export default function SessionPage() {
         setIsSummarizing(true);
 
         try {
+            let preferredLanguage = 'en';
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            if (currentUser) {
+                const { data: prefData } = await supabase
+                    .from('user_preferences')
+                    .select('preferred_language')
+                    .eq('user_id', currentUser.id)
+                    .single();
+                if (prefData?.preferred_language) {
+                    preferredLanguage = prefData.preferred_language;
+                }
+            }
+
             const response = await fetch('/api/summarize', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId }),
+                body: JSON.stringify({ sessionId, language: preferredLanguage }),
             });
 
             if (!response.ok) {

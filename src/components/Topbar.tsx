@@ -152,7 +152,7 @@ export default function Topbar({ session, theme, toggleTheme }: TopbarProps) {
 
         try {
             // Fetch available models
-            const modelsRes = await fetch('http://localhost:3001/api/models');
+            const modelsRes = await fetch('/api/models');
             if (modelsRes.ok) {
                 const modelsData = await modelsRes.json();
                 setAvailableModels(modelsData.models || []);
@@ -163,7 +163,7 @@ export default function Topbar({ session, theme, toggleTheme }: TopbarProps) {
             // Fetch current preference
             const userId = session?.user?.id;
             if (userId) {
-                const prefRes = await fetch(`http://localhost:3001/api/preferences/${userId}`);
+                const prefRes = await fetch(`/api/preferences/${userId}`);
                 if (prefRes.ok) {
                     const prefData = await prefRes.json();
                     setSelectedModel(prefData.preferred_model || '');
@@ -187,7 +187,7 @@ export default function Topbar({ session, theme, toggleTheme }: TopbarProps) {
             const userId = session?.user?.id;
             if (!userId) throw new Error('Not logged in');
 
-            const res = await fetch(`http://localhost:3001/api/preferences/${userId}`, {
+            const res = await fetch(`/api/preferences/${userId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ preferred_model: selectedModel, preferred_language: selectedLanguage }),

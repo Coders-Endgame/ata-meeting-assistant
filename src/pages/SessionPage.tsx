@@ -149,7 +149,7 @@ export default function SessionPage() {
     const fetchBotStatus = useCallback(async () => {
         if (!sessionId) return;
         try {
-            const response = await fetch(`http://localhost:3001/api/bot/status/${sessionId}`);
+            const response = await fetch(`/api/bot/status/${sessionId}`);
             if (response.ok) {
                 const data = await response.json();
                 setBotStatus(data);
@@ -164,7 +164,7 @@ export default function SessionPage() {
 
     // Fetch frontend config on mount
     useEffect(() => {
-        fetch('http://localhost:3001/api/config')
+        fetch('/api/config')
             .then(res => res.json())
             .then(data => {
                 if (data.live_summary_interval_sec) {
@@ -591,7 +591,7 @@ export default function SessionPage() {
         setIsSummarizing(true);
 
         try {
-            const response = await fetch('http://localhost:3001/api/summarize', {
+            const response = await fetch('/api/summarize', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionId }),
@@ -718,7 +718,7 @@ export default function SessionPage() {
         setChatLoading(true);
 
         try {
-            const response = await fetch('http://localhost:3001/api/chat', {
+            const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

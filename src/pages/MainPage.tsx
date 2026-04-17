@@ -261,7 +261,7 @@ export default function MainPage({ session }: { session: any }) {
             navigate(`/session/${newSession.id}`);
 
             // 3. Fire background transcription request (don't await)
-            fetch('http://localhost:3001/api/transcribe', {
+            fetch('/api/transcribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionId: newSession.id }),
@@ -339,7 +339,7 @@ export default function MainPage({ session }: { session: any }) {
                     // Fetch user's preferred transcription language
                     let transcriptionLanguage = 'en';
                     try {
-                        const prefRes = await fetch(`http://localhost:3001/api/preferences/${session.user.id}`);
+                        const prefRes = await fetch(`/api/preferences/${session.user.id}`);
                         if (prefRes.ok) {
                             const prefData = await prefRes.json();
                             transcriptionLanguage = prefData.preferred_language || 'en';
@@ -348,7 +348,7 @@ export default function MainPage({ session }: { session: any }) {
                         console.warn('Could not fetch language preference, defaulting to en:', prefErr);
                     }
 
-                    const response = await fetch('http://localhost:3001/api/bot/start', {
+                    const response = await fetch('/api/bot/start', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ zoomUrl, sessionId: sessionIdToJoin, language: transcriptionLanguage })

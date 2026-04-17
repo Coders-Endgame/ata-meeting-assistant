@@ -135,6 +135,15 @@ export default function SessionPage() {
     const audioRef = useRef<HTMLAudioElement>(null);
     const transcriptScrollRef = useRef<HTMLDivElement>(null);
     const dragInfo = useRef<{ startX: number, startRatio: number, totalWidth: number } | null>(null);
+    const latestTranscriptTimeRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (transcripts.length > 0) {
+            latestTranscriptTimeRef.current = transcripts[transcripts.length - 1].created_at;
+        } else {
+            latestTranscriptTimeRef.current = null;
+        }
+    }, [transcripts]);
 
     // Fetch bot status
     const fetchBotStatus = useCallback(async () => {
@@ -205,6 +214,39 @@ export default function SessionPage() {
             supabase.removeChannel(channel);
         };
     }, [sessionId]);
+
+    // Polling fallback for transcripts (in case realtime isn't enabled for transcripts)
+    useEffect(() => {
+        if (!sessionId) return;
+        
+        const interval = setInterval(async () => {
+            let query = supabase
+                .from('transcripts')
+                .select('*')
+                .eq('session_id', sessionId)
+                .order('created_at', { ascending: true });
+
+            if (latestTranscriptTimeRef.current) {
+                query = query.gt('created_at', latestTranscriptTimeRef.current);
+            }
+
+            const { data, error } = await query;
+
+            if (!error && data && data.length > 0) {
+                setTranscripts(prev => {
+                    const existingIds = new Set(prev.map(t => t.id));
+                    const newTranscripts = data.filter(t => !existingIds.has(t.id));
+                    if (newTranscripts.length > 0) {
+                        return [...prev, ...newTranscripts];
+                    }
+                    return prev;
+                });
+            }
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [sessionId]);
+
 
     // Real-time subscription for action items changes
     useEffect(() => {

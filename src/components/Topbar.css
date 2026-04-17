@@ -238,3 +238,19 @@
   background-color: var(--border-color) !important;
   color: var(--text-color-secondary) !important;
 }
+/* Mobile View Optimizations */
+@media (max-width: 600px) {
+  .topbar {
+    padding: var(--spacing-sm) var(--spacing-md);
+    gap: var(--spacing-sm);
+  }
+  .topbar-title {
+    font-size: 1rem;
+  }
+  .topbar-right {
+    gap: var(--spacing-sm);
+  }
+  .user-name {
+    display: none;
+  }
+}

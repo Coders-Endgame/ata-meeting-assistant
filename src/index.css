@@ -212,3 +212,14 @@ label {
   border-color: var(--primary-color);
   transform: scale(1.05);
 }
+
+/* Deep Mobile View Optimizations */
+@media (max-width: 480px) {
+  .container {
+    padding: var(--spacing-md);
+  }
+  .app-content, .main-content-logged-in {
+    width: 100%;
+    overflow-x: hidden;
+  }
+}

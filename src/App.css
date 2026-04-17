@@ -11,7 +11,7 @@
   display: flex;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto; overflow-x: hidden;
 }
 
 .main-content-logged-in {
@@ -109,4 +109,17 @@
 
 .audio-player {
   width: 100%;
+}
+/* Mobile View Optimizations */
+@media (max-width: 768px) {
+  .split-container {
+    flex-direction: column;
+    height: auto;
+  }
+  .split-right {
+    padding: var(--spacing-md);
+  }
+  .app-content {
+    flex-direction: column;
+  }
 }

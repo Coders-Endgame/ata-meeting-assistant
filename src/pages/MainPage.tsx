@@ -127,6 +127,8 @@ export default function MainPage({ session }: { session: any }) {
     const [showAllSessionsDialog, setShowAllSessionsDialog] = useState(false);
     const [loadingAllSessions, setLoadingAllSessions] = useState(false);
 
+    const [mobileTab, setMobileTab] = useState<'online' | 'offline'>('online');
+
     useEffect(() => {
         const fetchRecentMeetings = async () => {
             if (!session?.user?.id) return;
@@ -421,7 +423,23 @@ export default function MainPage({ session }: { session: any }) {
                             </button>
                         )}
                     </div>
-                    <div className="split-middle anim-fade-up">
+                    
+                    <div className="mobile-tab-switcher">
+                        <button
+                            className={`mobile-tab-btn ${mobileTab === 'online' ? 'active' : ''}`}
+                            onClick={() => setMobileTab('online')}
+                        >
+                            Online Session
+                        </button>
+                        <button
+                            className={`mobile-tab-btn ${mobileTab === 'offline' ? 'active' : ''}`}
+                            onClick={() => setMobileTab('offline')}
+                        >
+                            Offline Session
+                        </button>
+                    </div>
+
+                    <div className={`split-middle anim-fade-up ${mobileTab === 'offline' ? 'mobile-hidden' : ''}`}>
                         <div className="section-card zoom-section-card">
                             <ZoomMeetingIllustration />
                             <h2>Start New Session</h2>
@@ -455,7 +473,7 @@ export default function MainPage({ session }: { session: any }) {
                             )}
                         </div>
                     </div>
-                    <div className="split-right anim-slide-right">
+                    <div className={`split-right anim-slide-right ${mobileTab === 'online' ? 'mobile-hidden' : ''}`}>
                         <div className="section-card audio-section-card">
                             <AudioWaveIllustration />
                             <h2>Analyze Audio</h2>

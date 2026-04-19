@@ -100,6 +100,7 @@ export default function SessionPage() {
     // Summarization states
     const [isSummarizing, setIsSummarizing] = useState(false);
     const [summaryMode, setSummaryMode] = useState<'live' | 'manual'>('manual');
+    const [isCreator, setIsCreator] = useState(false);
     const liveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const [liveSummaryInterval, setLiveSummaryInterval] = useState(15);
     const isSummarizingRef = useRef(false);
@@ -355,7 +356,7 @@ export default function SessionPage() {
 
     // Auto-generate summary on interval in live mode
     useEffect(() => {
-        if (summaryMode === 'live' && botStatus.status === 'active' && sessionId) {
+        if (isCreator && summaryMode === 'live' && botStatus.status === 'active' && sessionId) {
             // Generate once immediately on switching to live
             if (transcriptsLengthRef.current > 0 && !isSummarizingRef.current) {
                 handleGenerateSummary();
@@ -523,8 +524,9 @@ export default function SessionPage() {
 
             const { data: members, error: membersError } = await supabase
                 .from('session_member')
-                .select('user_id')
-                .eq('session_id', id);
+                .select('user_id, created_at')
+                .eq('session_id', id)
+                .order('created_at', { ascending: true });
 
             if (members && !membersError) {
                 const userIds = members.map(m => m.user_id);
@@ -543,6 +545,12 @@ export default function SessionPage() {
                 }
 
                 const { data: { user: currentUser } } = await supabase.auth.getUser();
+                
+                if (currentUser && members.length > 0 && members[0].user_id === currentUser.id) {
+                    setIsCreator(true);
+                } else {
+                    setIsCreator(false);
+                }
 
                 const mappedMembers = members.map((m: any) => {
                     const profile = profileMap.get(m.user_id);
@@ -1176,64 +1184,66 @@ export default function SessionPage() {
                                 </Tooltip>
                             </Box>
 
-                            {botStatus.status === 'active' ? (
-                                <Box display="flex" alignItems="center" gap={1.5}>
-                                    {/* Live / Manual Toggle */}
-                                    <div className="summary-mode-toggle">
-                                        <button
-                                            className={`mode-btn ${summaryMode === 'live' ? 'active' : ''}`}
-                                            onClick={() => setSummaryMode('live')}
-                                        >
-                                            <span className="live-dot"></span>
-                                            Live
-                                        </button>
-                                        <button
-                                            className={`mode-btn ${summaryMode === 'manual' ? 'active' : ''}`}
-                                            onClick={() => setSummaryMode('manual')}
-                                        >
-                                            Manual
-                                        </button>
-                                    </div>
+                            {isCreator && (
+                                botStatus.status === 'active' ? (
+                                    <Box display="flex" alignItems="center" gap={1.5}>
+                                        {/* Live / Manual Toggle */}
+                                        <div className="summary-mode-toggle">
+                                            <button
+                                                className={`mode-btn ${summaryMode === 'live' ? 'active' : ''}`}
+                                                onClick={() => setSummaryMode('live')}
+                                            >
+                                                <span className="live-dot"></span>
+                                                Live
+                                            </button>
+                                            <button
+                                                className={`mode-btn ${summaryMode === 'manual' ? 'active' : ''}`}
+                                                onClick={() => setSummaryMode('manual')}
+                                            >
+                                                Manual
+                                            </button>
+                                        </div>
 
-                                    {/* Show Generate button only in manual mode */}
-                                    {summaryMode === 'manual' && (
-                                        <Tooltip title={isSummarizing ? 'Generating...' : summary ? 'Regenerate summary' : 'Generate summary'}>
-                                            <span>
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={handleGenerateSummary}
-                                                    disabled={isSummarizing || transcripts.length === 0}
-                                                    className="generate-btn"
-                                                >
-                                                    {isSummarizing ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
-                                                </IconButton>
-                                            </span>
-                                        </Tooltip>
-                                    )}
+                                        {/* Show Generate button only in manual mode */}
+                                        {summaryMode === 'manual' && (
+                                            <Tooltip title={isSummarizing ? 'Generating...' : summary ? 'Regenerate summary' : 'Generate summary'}>
+                                                <span>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={handleGenerateSummary}
+                                                        disabled={isSummarizing || transcripts.length === 0}
+                                                        className="generate-btn"
+                                                    >
+                                                        {isSummarizing ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
+                                                    </IconButton>
+                                                </span>
+                                            </Tooltip>
+                                        )}
 
-                                    {/* Show auto-refresh indicator in live mode */}
-                                    {summaryMode === 'live' && (
-                                        <Chip
-                                            icon={isSummarizing ? <CircularProgress size={12} color="inherit" /> : <AutoAwesomeIcon sx={{ fontSize: '0.9rem !important' }} />}
-                                            label={isSummarizing ? 'Updating...' : `Auto · ${liveSummaryInterval}s`}
-                                            size="small"
-                                            className="live-indicator-chip"
-                                        />
-                                    )}
-                                </Box>
-                            ) : (
-                                <Tooltip title={isSummarizing ? 'Generating...' : summary ? 'Regenerate summary' : 'Generate summary'}>
-                                    <span>
-                                        <IconButton
-                                            size="small"
-                                            onClick={handleGenerateSummary}
-                                            disabled={isSummarizing || transcripts.length === 0}
-                                            className="generate-btn"
-                                        >
-                                            {isSummarizing ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
+                                        {/* Show auto-refresh indicator in live mode */}
+                                        {summaryMode === 'live' && (
+                                            <Chip
+                                                icon={isSummarizing ? <CircularProgress size={12} color="inherit" /> : <AutoAwesomeIcon sx={{ fontSize: '0.9rem !important' }} />}
+                                                label={isSummarizing ? 'Updating...' : `Auto · ${liveSummaryInterval}s`}
+                                                size="small"
+                                                className="live-indicator-chip"
+                                            />
+                                        )}
+                                    </Box>
+                                ) : (
+                                    <Tooltip title={isSummarizing ? 'Generating...' : summary ? 'Regenerate summary' : 'Generate summary'}>
+                                        <span>
+                                            <IconButton
+                                                size="small"
+                                                onClick={handleGenerateSummary}
+                                                disabled={isSummarizing || transcripts.length === 0}
+                                                className="generate-btn"
+                                            >
+                                                {isSummarizing ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
+                                            </IconButton>
+                                        </span>
+                                    </Tooltip>
+                                )
                             )}
                         </Box>
 
@@ -1255,7 +1265,7 @@ export default function SessionPage() {
                                         <Box className="empty-state" sx={{ minHeight: '100px !important' }}>
                                             <AutoAwesomeIcon sx={{ fontSize: 40, color: 'var(--border-color)', mb: 1 }} />
                                             <Typography variant="body2" className="no-summary-text">
-                                                No summary yet. Click "Generate" to create one from the transcript.
+                                                {isCreator ? 'No summary yet. Click "Generate" to create one from the transcript.' : 'No summary yet. Waiting for the session creator to generate.'}
                                             </Typography>
                                         </Box>
                                     )}

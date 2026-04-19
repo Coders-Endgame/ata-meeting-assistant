@@ -98,6 +98,10 @@ SUMMARIZER_DIR="$ROOT_DIR/services/summarizer"
         $PYTHON_CMD -m venv "$VENV_DIR"
         "$VENV_DIR/bin/pip" install -q -r "$SUMMARIZER_DIR/requirements.txt"
         ok "Virtual environment created and dependencies installed."
+    elif ! "$VENV_DIR/bin/python" -c "import uvicorn" >/dev/null 2>&1; then
+        warn "Summarizer virtual environment exists but dependencies are missing. Reinstalling requirements..."
+        "$VENV_DIR/bin/pip" install -q -r "$SUMMARIZER_DIR/requirements.txt"
+        ok "Summarizer dependencies installed."
     fi
     SUMMARIZER_PYTHON="$VENV_DIR/bin/python"
 

@@ -1,6 +1,7 @@
 services:
   zoom-bot:
     build: .
+    gpus: all
     env_file:
       - ../../.env
     environment:
@@ -15,4 +16,3 @@ services:
 
 volumes:
   whisper-models:
-

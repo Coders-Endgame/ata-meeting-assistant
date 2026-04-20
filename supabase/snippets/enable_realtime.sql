@@ -5,3 +5,4 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.transcripts;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.summaries;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.action_items;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.sessions;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.session_member;

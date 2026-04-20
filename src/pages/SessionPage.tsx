@@ -321,6 +321,134 @@ export default function SessionPage() {
         };
     }, [sessionId]);
 
+    // Real-time subscription for new participants (session_member)
+    useEffect(() => {
+        if (!sessionId) return;
+
+        const channel = supabase
+            .channel(`session-members-${sessionId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'session_member',
+                    filter: `session_id=eq.${sessionId}`
+                },
+                async (payload) => {
+                    const newMember = payload.new as { user_id: string; session_id: string };
+
+                    try {
+                        // Fetch profile for the new member
+                        const { data: profile } = await supabase
+                            .from('profiles')
+                            .select('id, first_name, last_name, email')
+                            .eq('id', newMember.user_id)
+                            .single();
+
+                        const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+                        let name = '';
+                        if (profile) {
+                            if (profile.first_name && profile.last_name) {
+                                name = `${profile.first_name} ${profile.last_name}`;
+                            } else if (profile.email) {
+                                name = profile.email;
+                            }
+                        }
+                        if (!name) {
+                            name = `User ${newMember.user_id.slice(0, 8)}`;
+                        }
+                        if (currentUser && newMember.user_id === currentUser.id) {
+                            name += ' (You)';
+                        }
+
+                        setParticipants(prev => {
+                            if (prev.some(p => p.user_id === newMember.user_id)) return prev;
+                            return [...prev, { user_id: newMember.user_id, display_name: name }];
+                        });
+                    } catch (err) {
+                        console.error('Error fetching new member profile:', err);
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [sessionId]);
+
+    // Polling fallback for participants (in case realtime isn't working for session_member)
+    useEffect(() => {
+        if (!sessionId) return;
+
+        const interval = setInterval(async () => {
+            try {
+                const { data: members, error: membersError } = await supabase
+                    .from('session_member')
+                    .select('user_id')
+                    .eq('session_id', sessionId);
+
+                if (membersError || !members) return;
+
+                // Check if there are new members compared to current state
+                setParticipants(prev => {
+                    const existingIds = new Set(prev.map(p => p.user_id));
+                    const newMemberIds = members.filter(m => !existingIds.has(m.user_id));
+                    if (newMemberIds.length === 0) return prev;
+
+                    // Trigger a full refetch for new members
+                    // We do this async and update state when ready
+                    (async () => {
+                        const userIds = newMemberIds.map(m => m.user_id);
+                        const { data: profiles } = await supabase
+                            .from('profiles')
+                            .select('id, first_name, last_name, email')
+                            .in('id', userIds);
+
+                        const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+                        const profileMap = new Map<string, any>();
+                        if (profiles) {
+                            profiles.forEach(p => profileMap.set(p.id, p));
+                        }
+
+                        const mapped = newMemberIds.map(m => {
+                            const profile = profileMap.get(m.user_id);
+                            let name = '';
+                            if (profile) {
+                                if (profile.first_name && profile.last_name) {
+                                    name = `${profile.first_name} ${profile.last_name}`;
+                                } else if (profile.email) {
+                                    name = profile.email;
+                                }
+                            }
+                            if (!name) name = `User ${m.user_id.slice(0, 8)}`;
+                            if (currentUser && m.user_id === currentUser.id) {
+                                name += ' (You)';
+                            }
+                            return { user_id: m.user_id, display_name: name };
+                        });
+
+                        setParticipants(current => {
+                            const currentIds = new Set(current.map(p => p.user_id));
+                            const toAdd = mapped.filter(m => !currentIds.has(m.user_id));
+                            if (toAdd.length === 0) return current;
+                            return [...current, ...toAdd];
+                        });
+                    })();
+
+                    return prev; // Return unchanged for now; async update above will handle it
+                });
+            } catch (err) {
+                console.error('Participant polling error:', err);
+            }
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [sessionId]);
+
     // Polling fallback for processing_status (in case realtime isn't enabled for sessions)
     useEffect(() => {
         if (!sessionId) return;

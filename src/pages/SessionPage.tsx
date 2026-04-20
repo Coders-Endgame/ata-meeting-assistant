@@ -473,6 +473,29 @@ export default function SessionPage() {
         return () => clearInterval(interval);
     }, [sessionId, processingStatus]);
 
+    // Polling fallback for summary (refresh every 5 seconds)
+    useEffect(() => {
+        if (!sessionId) return;
+
+        const interval = setInterval(async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('summaries')
+                    .select('summary')
+                    .eq('session_id', sessionId)
+                    .maybeSingle();
+
+                if (!error && data) {
+                    setSummary(prev => (prev !== data.summary ? data.summary : prev));
+                }
+            } catch (err) {
+                console.error('Summary polling error:', err);
+            }
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [sessionId]);
+
     // Keep refs in sync so the interval callback reads latest values without being a dependency
     useEffect(() => {
         isSummarizingRef.current = isSummarizing;

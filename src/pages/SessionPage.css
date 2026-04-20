@@ -833,6 +833,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  color: #fff !important;
+}
+
+.chat-panel-title .MuiTypography-root {
+  color: #fff !important;
+}
+
+.chat-panel-title .MuiSvgIcon-root {
+  color: #fff !important;
 }
 
 .chat-close-btn {
